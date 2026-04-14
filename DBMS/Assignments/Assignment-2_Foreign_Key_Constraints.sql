@@ -235,3 +235,5 @@ delete from categories where category_id=1;
 
 select * from categories;
 select * from products_restrict;
+
+
