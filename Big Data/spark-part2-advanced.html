@@ -1,0 +1,2043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spark Part II — The Deep Internals</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,700&family=DM+Sans:wght@300;400;500;600&family=Fira+Code:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+
+:root{
+  --night: #080C10;
+  --night2: #0D1117;
+  --night3: #141B22;
+  --night4: #1C2530;
+  --slate: #263040;
+  --wire: #2E3D50;
+  --mist: #8899AA;
+  --fog:  #C4D0DC;
+  --paper:#E8F0F8;
+  --white:#F5F9FF;
+  --cyan: #00D4FF;
+  --cyan2:#00AACC;
+  --green:#00FF88;
+  --green2:#00CC6A;
+  --amber:#FFB800;
+  --amber2:#E09A00;
+  --rose: #FF4466;
+  --rose2:#CC2244;
+  --violet:#8B5CF6;
+  --shadow: rgba(0,212,255,0.08);
+}
+
+body{
+  background:var(--night);
+  color:var(--fog);
+  font-family:'DM Sans',sans-serif;
+  font-size:17px;
+  line-height:1.85;
+  overflow-x:hidden;
+}
+
+/* ======= HERO ======= */
+.hero{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  overflow:hidden;
+  padding:80px 40px;
+}
+
+/* Animated circuit background */
+.hero-circuit{
+  position:absolute;
+  inset:0;
+  opacity:0.06;
+  background-image:
+    linear-gradient(var(--cyan) 1px,transparent 1px),
+    linear-gradient(90deg,var(--cyan) 1px,transparent 1px);
+  background-size:80px 80px;
+  animation:gridDrift 20s linear infinite;
+}
+@keyframes gridDrift{
+  from{background-position:0 0;}
+  to{background-position:80px 80px;}
+}
+
+.hero-orbs{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+
+.orb{
+  position:absolute;
+  border-radius:50%;
+  filter:blur(80px);
+  animation:orbFloat ease-in-out infinite;
+}
+
+@keyframes orbFloat{
+  0%,100%{transform:translateY(0) scale(1);}
+  50%{transform:translateY(-30px) scale(1.05);}
+}
+
+.hero-content{
+  position:relative;
+  z-index:1;
+  max-width:900px;
+}
+
+.hero-part{
+  font-family:'Fira Code',monospace;
+  font-size:11px;
+  letter-spacing:0.4em;
+  color:var(--cyan);
+  margin-bottom:24px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.hero-part::before{
+  content:'';
+  width:40px;height:1px;
+  background:var(--cyan);
+}
+
+.hero h1{
+  font-family:'Fraunces',serif;
+  font-size:clamp(50px,10vw,110px);
+  font-weight:900;
+  line-height:0.9;
+  color:var(--white);
+  margin-bottom:16px;
+}
+
+.hero h1 .accent{
+  font-style:italic;
+  background:linear-gradient(135deg,var(--cyan),var(--green));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+
+.hero-tagline{
+  font-family:'Fira Code',monospace;
+  font-size:13px;
+  color:var(--amber);
+  letter-spacing:0.15em;
+  margin-bottom:36px;
+}
+
+.hero-desc{
+  font-size:18px;
+  color:var(--mist);
+  max-width:620px;
+  line-height:1.75;
+  font-weight:300;
+}
+.hero-desc strong{color:var(--fog);}
+
+.hero-chapters{
+  margin-top:48px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+.hc-pill{
+  font-family:'Fira Code',monospace;
+  font-size:11px;
+  padding:7px 16px;
+  border-radius:100px;
+  border:1px solid var(--wire);
+  color:var(--mist);
+  letter-spacing:0.05em;
+  transition:all 0.2s;
+}
+.hc-pill:hover{border-color:var(--cyan);color:var(--cyan);}
+
+/* ======= NAV ======= */
+.nav{
+  position:sticky;
+  top:0;
+  background:rgba(8,12,16,0.95);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--wire);
+  z-index:200;
+  padding:0 24px;
+  display:flex;
+  overflow-x:auto;
+  gap:0;
+}
+
+.nav a{
+  font-family:'Fira Code',monospace;
+  font-size:10px;
+  letter-spacing:0.12em;
+  color:var(--mist);
+  text-decoration:none;
+  padding:15px 16px;
+  white-space:nowrap;
+  border-bottom:2px solid transparent;
+  transition:all 0.2s;
+}
+.nav a:hover{color:var(--cyan);border-bottom-color:var(--cyan);}
+
+/* ======= CHAPTER ======= */
+.chapter{
+  max-width:820px;
+  margin:0 auto;
+  padding:80px 32px;
+  border-bottom:1px solid var(--night3);
+}
+
+.ch-label{
+  font-family:'Fira Code',monospace;
+  font-size:10px;
+  letter-spacing:0.4em;
+  color:var(--cyan);
+  text-transform:uppercase;
+  margin-bottom:14px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+.ch-label::after{content:'';flex:1;height:1px;background:var(--wire);}
+
+.chapter h2{
+  font-family:'Fraunces',serif;
+  font-size:clamp(30px,5vw,54px);
+  font-weight:900;
+  color:var(--white);
+  line-height:1.0;
+  margin-bottom:20px;
+}
+.chapter h2 em{font-style:italic;color:var(--cyan);}
+.chapter h2 .g{color:var(--green);}
+.chapter h2 .a{color:var(--amber);}
+.chapter h2 .r{color:var(--rose);}
+.chapter h2 .v{color:var(--violet);}
+
+.ch-lead{
+  font-size:19px;
+  color:var(--fog);
+  border-left:3px solid var(--cyan);
+  padding-left:20px;
+  line-height:1.65;
+  margin-bottom:0;
+  font-weight:300;
+}
+
+/* ======= PROSE ======= */
+.prose p{
+  color:var(--mist);
+  margin-bottom:22px;
+  font-size:17px;
+  line-height:1.85;
+}
+.prose p strong{color:var(--fog);font-weight:500;}
+.prose p code{
+  font-family:'Fira Code',monospace;
+  font-size:13px;
+  background:var(--night3);
+  border:1px solid var(--wire);
+  padding:2px 8px;
+  border-radius:4px;
+  color:var(--cyan);
+}
+
+.prose h3{
+  font-family:'Fraunces',serif;
+  font-size:28px;
+  font-weight:700;
+  color:var(--white);
+  margin:52px 0 18px;
+  padding-bottom:10px;
+  border-bottom:1px solid var(--wire);
+}
+
+.prose h4{
+  font-family:'Fira Code',monospace;
+  font-size:11px;
+  letter-spacing:0.25em;
+  text-transform:uppercase;
+  color:var(--amber);
+  margin:36px 0 14px;
+}
+
+/* ======= STORY BOX ======= */
+.story{
+  background:var(--night3);
+  border:1px solid var(--wire);
+  border-left:4px solid var(--cyan);
+  border-radius:0 12px 12px 0;
+  padding:32px;
+  margin:32px 0;
+  position:relative;
+  overflow:hidden;
+}
+
+.story::before{
+  content:'';
+  position:absolute;
+  top:0;right:0;
+  width:200px;height:200px;
+  background:radial-gradient(circle,rgba(0,212,255,0.05),transparent 70%);
+  pointer-events:none;
+}
+
+.story-tag{
+  font-family:'Fira Code',monospace;
+  font-size:10px;
+  letter-spacing:0.3em;
+  color:var(--cyan);
+  margin-bottom:16px;
+  display:block;
+}
+
+.story p{
+  color:var(--fog);
+  font-size:16px;
+  line-height:1.8;
+  margin-bottom:14px;
+}
+.story p:last-child{margin:0;}
+.story p strong{color:var(--white);}
+
+/* ======= WARNING / IMPORTANT ======= */
+.warn{
+  background:rgba(255,68,102,0.06);
+  border:1px solid rgba(255,68,102,0.3);
+  border-radius:10px;
+  padding:24px 28px;
+  margin:28px 0;
+}
+.warn-tag{
+  font-family:'Fira Code',monospace;
+  font-size:10px;
+  letter-spacing:0.3em;
+  color:var(--rose);
+  margin-bottom:10px;
+  display:block;
+}
+.warn p{color:var(--mist);font-size:15px;margin:0;line-height:1.7;}
+.warn p strong{color:var(--rose);}
+
+/* TIP */
+.tip{
+  background:rgba(0,255,136,0.04);
+  border:1px solid rgba(0,255,136,0.25);
+  border-radius:10px;
+  padding:24px 28px;
+  margin:28px 0;
+}
+.tip-tag{
+  font-family:'Fira Code',monospace;
+  font-size:10px;
+  letter-spacing:0.3em;
+  color:var(--green);
+  margin-bottom:10px;
+  display:block;
+}
+.tip p{color:var(--mist);font-size:15px;margin:0;line-height:1.7;}
+.tip p strong{color:var(--green);}
+
+/* HIGHLIGHT */
+.hl{
+  background:rgba(255,184,0,0.05);
+  border:1px solid rgba(255,184,0,0.2);
+  border-radius:10px;
+  padding:20px 24px;
+  margin:24px 0;
+}
+.hl p{color:var(--mist);font-size:15px;margin:0;line-height:1.7;}
+.hl p strong{color:var(--amber);}
+
+/* ======= CODE ======= */
+.code{
+  background:#030508;
+  border:1px solid var(--wire);
+  border-radius:10px;
+  padding:28px;
+  margin:24px 0;
+  font-family:'Fira Code',monospace;
+  font-size:13px;
+  line-height:1.85;
+  color:#8899AA;
+  overflow-x:auto;
+  position:relative;
+}
+.code::before{
+  content:attr(data-lang);
+  position:absolute;
+  top:12px;right:16px;
+  font-size:9px;
+  letter-spacing:0.25em;
+  color:var(--wire);
+}
+.code .kw {color:#FF4466;}
+.code .fn {color:#00D4FF;}
+.code .str{color:#00FF88;}
+.code .cm {color:#3A4A5A;font-style:italic;}
+.code .num{color:#FFB800;}
+.code .cls{color:#8B5CF6;}
+.code .op {color:#FF8844;}
+
+/* ======= FLOW DIAGRAM ======= */
+.flow{
+  background:var(--night2);
+  border:1px solid var(--wire);
+  border-radius:12px;
+  padding:32px;
+  margin:32px 0;
+}
+
+.flow-title{
+  font-family:'Fira Code',monospace;
+  font-size:10px;
+  letter-spacing:0.35em;
+  color:var(--mist);
+  text-align:center;
+  margin-bottom:28px;
+  text-transform:uppercase;
+}
+
+.flow-row{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+.fstep{
+  display:flex;
+  align-items:flex-start;
+  gap:18px;
+  padding:16px 18px;
+  background:var(--night3);
+  border:1px solid var(--wire);
+  border-radius:8px;
+  transition:all 0.2s;
+  cursor:default;
+}
+
+.fstep:hover{border-color:rgba(0,212,255,0.4);transform:translateX(4px);}
+
+.fstep-num{
+  font-family:'Fira Code',monospace;
+  font-size:11px;
+  color:var(--cyan);
+  background:rgba(0,212,255,0.08);
+  padding:4px 10px;
+  border-radius:4px;
+  flex-shrink:0;
+  margin-top:2px;
+  min-width:44px;
+  text-align:center;
+}
+
+.fstep-body strong{
+  font-family:'DM Sans',sans-serif;
+  font-size:15px;
+  font-weight:600;
+  color:var(--white);
+  display:block;
+  margin-bottom:5px;
+}
+
+.fstep-body span{font-size:14px;color:var(--mist);line-height:1.65;}
+
+.flow-arrow{
+  text-align:center;
+  color:var(--cyan);
+  font-size:16px;
+  opacity:0.5;
+  padding:2px;
+}
+
+/* ======= COMPARISON ======= */
+.compare{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin:28px 0;
+}
+@media(max-width:600px){.compare{grid-template-columns:1fr;}}
+
+.cb{
+  background:var(--night3);
+  border:1px solid var(--wire);
+  border-radius:10px;
+  padding:24px;
+  transition:all 0.2s;
+}
+.cb:hover{transform:translateY(-2px);}
+
+.cb.good{border-color:rgba(0,255,136,0.3);background:rgba(0,255,136,0.04);}
+.cb.bad {border-color:rgba(255,68,102,0.3);background:rgba(255,68,102,0.04);}
+.cb.a   {border-color:rgba(0,212,255,0.3);}
+.cb.b   {border-color:rgba(255,184,0,0.3);}
+
+.cb-label{
+  font-family:'Fira Code',monospace;
+  font-size:10px;
+  letter-spacing:0.25em;
+  margin-bottom:12px;
+  display:block;
+}
+.cb.good .cb-label{color:var(--green);}
+.cb.bad  .cb-label{color:var(--rose);}
+.cb.a    .cb-label{color:var(--cyan);}
+.cb.b    .cb-label{color:var(--amber);}
+
+.cb-title{
+  font-family:'Fraunces',serif;
+  font-size:18px;
+  font-weight:700;
+  color:var(--white);
+  margin-bottom:12px;
+}
+
+.cb p{font-size:14px;color:var(--mist);line-height:1.7;margin:0;}
+.cb p strong{color:var(--fog);}
+
+/* ======= TABLE ======= */
+.tbl{
+  width:100%;
+  border-collapse:collapse;
+  margin:24px 0;
+  font-size:14px;
+}
+.tbl th{
+  font-family:'Fira Code',monospace;
+  font-size:9px;
+  letter-spacing:0.25em;
+  text-transform:uppercase;
+  color:var(--mist);
+  padding:12px 16px;
+  text-align:left;
+  background:var(--night3);
+  border-bottom:2px solid var(--wire);
+}
+.tbl td{
+  padding:13px 16px;
+  border-bottom:1px solid var(--night3);
+  color:var(--mist);
+  vertical-align:top;
+  line-height:1.6;
+}
+.tbl td strong{color:var(--fog);font-weight:500;}
+.tbl tr:hover td{background:var(--night3);}
+
+/* ======= JOIN VISUAL ======= */
+.join-visual{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  justify-content:center;
+  margin:28px 0;
+}
+
+.jv-box{
+  background:var(--night3);
+  border:1px solid var(--wire);
+  border-radius:10px;
+  padding:20px;
+  text-align:center;
+  flex:1;
+  min-width:160px;
+  max-width:200px;
+  transition:all 0.2s;
+}
+.jv-box:hover{border-color:var(--cyan);}
+
+.jv-emoji{font-size:28px;margin-bottom:10px;display:block;}
+
+.jv-name{
+  font-family:'Fraunces',serif;
+  font-size:16px;
+  font-weight:700;
+  color:var(--white);
+  margin-bottom:6px;
+}
+
+.jv-type{
+  font-family:'Fira Code',monospace;
+  font-size:10px;
+  letter-spacing:0.15em;
+  color:var(--cyan);
+  margin-bottom:10px;
+  display:block;
+}
+
+.jv-desc{font-size:13px;color:var(--mist);line-height:1.6;}
+
+/* ======= PARTITION METER ======= */
+.partition-meter{
+  margin:24px 0;
+  background:var(--night3);
+  border:1px solid var(--wire);
+  border-radius:10px;
+  overflow:hidden;
+}
+
+.pm-header{
+  background:var(--night4);
+  padding:14px 20px;
+  font-family:'Fira Code',monospace;
+  font-size:10px;
+  letter-spacing:0.25em;
+  color:var(--mist);
+  display:flex;
+  justify-content:space-between;
+}
+
+.pm-bar{
+  height:48px;
+  display:flex;
+}
+
+.pm-bad{
+  background:linear-gradient(135deg,#3A0A14,#220508);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:'Fira Code',monospace;
+  font-size:10px;
+  color:var(--rose);
+  flex:1;
+  text-align:center;
+  padding:8px;
+}
+
+.pm-good{
+  background:linear-gradient(135deg,#0A3A1A,#052210);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:'Fira Code',monospace;
+  font-size:10px;
+  color:var(--green);
+  flex:1;
+  text-align:center;
+  padding:8px;
+}
+
+.pm-over{
+  background:linear-gradient(135deg,#1A1A0A,#0E0E05);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:'Fira Code',monospace;
+  font-size:10px;
+  color:var(--amber);
+  flex:1;
+  text-align:center;
+  padding:8px;
+}
+
+.pm-footer{
+  display:flex;
+  padding:12px 20px;
+  gap:24px;
+  flex-wrap:wrap;
+}
+
+.pm-leg{
+  font-size:13px;
+  color:var(--mist);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.pm-dot{
+  width:10px;height:10px;
+  border-radius:2px;
+  flex-shrink:0;
+}
+
+/* ======= TIMELINE ======= */
+.timeline{
+  position:relative;
+  padding-left:36px;
+  margin:28px 0;
+}
+.timeline::before{
+  content:'';
+  position:absolute;
+  left:10px;top:0;bottom:0;
+  width:2px;
+  background:linear-gradient(to bottom,var(--cyan),var(--wire));
+}
+
+.tl-item{
+  position:relative;
+  margin-bottom:28px;
+}
+.tl-item::before{
+  content:'';
+  position:absolute;
+  left:-30px;top:7px;
+  width:10px;height:10px;
+  border-radius:50%;
+  background:var(--cyan);
+  border:2px solid var(--night);
+  box-shadow:0 0 8px rgba(0,212,255,0.5);
+}
+
+.tl-item h4{
+  font-family:'Fraunces',serif;
+  font-size:18px;
+  font-weight:700;
+  color:var(--white);
+  margin-bottom:8px;
+}
+
+.tl-item p{
+  font-size:15px;
+  color:var(--mist);
+  line-height:1.7;
+}
+
+/* ======= OPTIMIZER VISUAL ======= */
+.optimizer{
+  background:var(--night2);
+  border:1px solid var(--wire);
+  border-radius:12px;
+  overflow:hidden;
+  margin:32px 0;
+}
+
+.opt-header{
+  background:var(--night4);
+  padding:16px 24px;
+  font-family:'Fira Code',monospace;
+  font-size:10px;
+  letter-spacing:0.35em;
+  color:var(--cyan);
+  text-align:center;
+}
+
+.opt-phases{
+  display:flex;
+  overflow-x:auto;
+}
+
+.opt-phase{
+  flex:1;
+  min-width:160px;
+  padding:24px 20px;
+  border-right:1px solid var(--wire);
+  text-align:center;
+  transition:all 0.2s;
+}
+.opt-phase:last-child{border-right:none;}
+.opt-phase:hover{background:rgba(0,212,255,0.04);}
+
+.opt-icon{font-size:28px;margin-bottom:12px;}
+
+.opt-title{
+  font-family:'Fira Code',monospace;
+  font-size:11px;
+  letter-spacing:0.15em;
+  color:var(--cyan);
+  margin-bottom:10px;
+  display:block;
+}
+
+.opt-desc{font-size:13px;color:var(--mist);line-height:1.6;}
+
+/* ======= SKEW VISUAL ======= */
+.skew-visual{
+  display:flex;
+  gap:6px;
+  align-items:flex-end;
+  height:120px;
+  margin:20px 0;
+  background:var(--night3);
+  border:1px solid var(--wire);
+  border-radius:8px;
+  padding:16px;
+}
+
+.skew-bar{
+  flex:1;
+  border-radius:4px 4px 0 0;
+  position:relative;
+  transition:all 0.3s;
+  min-width:20px;
+}
+
+.skew-label{
+  position:absolute;
+  bottom:-20px;
+  left:50%;
+  transform:translateX(-50%);
+  font-family:'Fira Code',monospace;
+  font-size:8px;
+  color:var(--mist);
+  white-space:nowrap;
+}
+
+/* ======= STREAMING DIAGRAM ======= */
+.stream-diag{
+  margin:28px 0;
+  overflow:hidden;
+  border-radius:10px;
+  border:1px solid var(--wire);
+}
+
+.sd-source{
+  background:var(--night4);
+  padding:16px 24px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+  border-bottom:1px solid var(--wire);
+}
+
+.sd-label{
+  font-family:'Fira Code',monospace;
+  font-size:10px;
+  letter-spacing:0.25em;
+  color:var(--mist);
+}
+
+.sd-flow{
+  display:flex;
+  overflow-x:auto;
+  background:var(--night3);
+  padding:20px 24px;
+  gap:0;
+  align-items:center;
+}
+
+.sd-event{
+  background:var(--night4);
+  border:1px solid var(--wire);
+  border-radius:6px;
+  padding:10px 14px;
+  font-family:'Fira Code',monospace;
+  font-size:11px;
+  color:var(--green);
+  white-space:nowrap;
+  position:relative;
+  animation:eventPop 0.3s ease;
+}
+@keyframes eventPop{from{opacity:0;transform:scale(0.8);}to{opacity:1;transform:scale(1);}}
+
+.sd-arrow-sm{color:var(--wire);padding:0 6px;font-size:14px;flex-shrink:0;}
+
+.sd-batch{
+  background:rgba(0,212,255,0.06);
+  border:1px dashed var(--cyan);
+  border-radius:8px;
+  padding:14px 18px;
+  font-size:13px;
+  color:var(--cyan);
+  white-space:nowrap;
+  margin-left:12px;
+}
+
+/* ======= DELTA TABLE VISUAL ======= */
+.delta-layers{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin:24px 0;
+}
+
+.dl-layer{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:16px 20px;
+  border-radius:8px;
+  border:1px solid var(--wire);
+  transition:all 0.2s;
+}
+.dl-layer:hover{transform:translateX(6px);}
+
+.dl-layer:nth-child(1){background:rgba(139,92,246,0.08);border-color:rgba(139,92,246,0.3);}
+.dl-layer:nth-child(2){background:rgba(0,212,255,0.05);border-color:rgba(0,212,255,0.2);}
+.dl-layer:nth-child(3){background:rgba(0,255,136,0.05);border-color:rgba(0,255,136,0.2);}
+.dl-layer:nth-child(4){background:rgba(255,184,0,0.05);border-color:rgba(255,184,0,0.2);}
+
+.dl-icon{font-size:22px;flex-shrink:0;}
+
+.dl-name{
+  font-family:'Fraunces',serif;
+  font-size:16px;
+  font-weight:700;
+  color:var(--white);
+}
+
+.dl-desc{font-size:14px;color:var(--mist);margin-top:3px;}
+
+/* ======= CHECKLIST ======= */
+.cklist{list-style:none;margin:20px 0;}
+.cklist li{
+  display:flex;
+  gap:14px;
+  align-items:flex-start;
+  padding:12px 0;
+  border-bottom:1px solid var(--night3);
+  font-size:15px;
+  color:var(--mist);
+}
+.cklist li:last-child{border-bottom:none;}
+.cklist li .ci{font-size:16px;margin-top:2px;flex-shrink:0;}
+.cklist li strong{color:var(--fog);}
+
+/* ======= FOOTER ======= */
+.footer{
+  background:var(--night2);
+  border-top:1px solid var(--wire);
+  text-align:center;
+  padding:60px 40px;
+}
+
+.footer h3{
+  font-family:'Fraunces',serif;
+  font-size:32px;
+  font-weight:900;
+  font-style:italic;
+  background:linear-gradient(135deg,var(--cyan),var(--green));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  margin-bottom:12px;
+}
+
+.footer p{
+  font-family:'Fira Code',monospace;
+  font-size:11px;
+  color:var(--wire);
+  letter-spacing:0.25em;
+}
+
+@media(max-width:700px){
+  .chapter{padding:60px 20px;}
+  .opt-phases{flex-direction:column;}
+  .opt-phase{border-right:none;border-bottom:1px solid var(--wire);}
+}
+</style>
+</head>
+<body>
+
+<!-- ======= HERO ======= -->
+<header class="hero">
+  <div class="hero-circuit"></div>
+  <div class="hero-orbs">
+    <div class="orb" style="width:400px;height:400px;background:radial-gradient(circle,rgba(0,212,255,0.12),transparent);top:10%;left:60%;animation-duration:8s;"></div>
+    <div class="orb" style="width:300px;height:300px;background:radial-gradient(circle,rgba(0,255,136,0.08),transparent);top:60%;left:20%;animation-duration:11s;animation-delay:2s;"></div>
+    <div class="orb" style="width:200px;height:200px;background:radial-gradient(circle,rgba(255,184,0,0.08),transparent);top:30%;left:10%;animation-duration:7s;animation-delay:4s;"></div>
+  </div>
+  <div class="hero-content">
+    <div class="hero-part">Part II — Advanced Spark</div>
+    <h1>Going<br><span class="accent">Deeper</span></h1>
+    <div class="hero-tagline">// optimization · joins · internals · streaming · delta lake · real-world patterns</div>
+    <p class="hero-desc">You now know <strong>what Spark is and how it runs</strong>. This part teaches you <strong>why jobs are slow, how to fix them, how the optimizer thinks, how streaming works for real</strong>, and how modern data engineering actually uses Spark in production. No fluff. Just depth.</p>
+    <div class="hero-chapters">
+      <span class="hc-pill">Partitioning</span>
+      <span class="hc-pill">Skew</span>
+      <span class="hc-pill">Joins Deep Dive</span>
+      <span class="hc-pill">Catalyst Optimizer</span>
+      <span class="hc-pill">Tungsten</span>
+      <span class="hc-pill">Structured Streaming</span>
+      <span class="hc-pill">Checkpointing</span>
+      <span class="hc-pill">Delta Lake</span>
+      <span class="hc-pill">UDFs</span>
+      <span class="hc-pill">Spark UI</span>
+      <span class="hc-pill">Real-World Patterns</span>
+    </div>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="#partitioning">Partitioning</a>
+  <a href="#skew">Data Skew</a>
+  <a href="#joins">Joins</a>
+  <a href="#catalyst">Catalyst</a>
+  <a href="#tungsten">Tungsten</a>
+  <a href="#streaming">Streaming</a>
+  <a href="#delta">Delta Lake</a>
+  <a href="#udfs">UDFs</a>
+  <a href="#sparkui">Spark UI</a>
+  <a href="#patterns">Real-World</a>
+  <a href="#config">Config Cheatsheet</a>
+</nav>
+
+
+<!-- ======= CHAPTER 1: PARTITIONING ======= -->
+<article class="chapter" id="partitioning">
+  <div class="ch-label">Chapter 01 — The Foundation of Performance</div>
+  <h2>Partitioning — <em>The Art of Dividing Data</em></h2>
+  <p class="ch-lead">Partitioning is the single most important concept in Spark performance. Get it wrong and your job will be 10× slower. Get it right and everything else falls into place. Most Spark performance problems trace back to bad partitioning.</p>
+
+  <div class="prose">
+    <p>You already know that Spark splits your data into <strong>partitions</strong> and runs one Task per partition. But here's what most tutorials skip: <em>how many partitions should you have?</em> What happens if you have too few, or too many? And how does Spark decide where data goes after a shuffle?</p>
+
+    <h3>Too Few Partitions — The Starvation Problem</h3>
+
+    <p>Imagine you have a cluster with 200 CPU cores spread across 50 Executors. Each Executor has 4 cores, so you can run 200 Tasks simultaneously. Your dataset, however, has only <strong>4 partitions</strong>.</p>
+
+    <p>What happens? Only 4 Tasks run at once. The other 196 cores sit completely idle, doing nothing. Your 200-core cluster is effectively a 4-core machine. You're paying for 200 workers but only 4 of them have jobs.</p>
+
+    <p>Worse: those 4 partitions might be enormous — maybe 50GB each. A single Task processing 50GB will hit memory limits and start spilling to disk, making it even slower. You've created a bottleneck that kills both parallelism and memory efficiency simultaneously.</p>
+
+    <h3>Too Many Partitions — The Overhead Problem</h3>
+
+    <p>The opposite extreme is equally bad. Say your dataset is 1GB but you have 10,000 partitions — so each partition is 100KB of data. Now you have 10,000 Tasks. Each Task runs, does a tiny amount of work (100KB in milliseconds), but the overhead of starting a Task, scheduling it, reporting completion, and tracking it in the Driver is constant regardless of partition size.</p>
+
+    <p>You end up spending more time on Task management overhead than on actual computation. The Driver's network is flooded with status messages. GC pressure increases. This is called "small files problem" and it's a very common issue in real Spark clusters.</p>
+
+    <div class="partition-meter">
+      <div class="pm-header"><span>PARTITION SIZE SPECTRUM</span><span>Target: 100–200 MB per partition</span></div>
+      <div class="pm-bar">
+        <div class="pm-bad">⚠ Too Few Partitions<br/>Huge partitions, idle cores<br/>OOM risk</div>
+        <div class="pm-good">✓ Just Right<br/>100–200 MB each<br/>Good parallelism + memory</div>
+        <div class="pm-over">⚠ Too Many Partitions<br/>Tiny data, massive overhead<br/>Slow scheduling</div>
+      </div>
+      <div class="pm-footer">
+        <div class="pm-leg"><div class="pm-dot" style="background:#CC2244;"></div>Danger Zone — too few</div>
+        <div class="pm-leg"><div class="pm-dot" style="background:#00CC6A;"></div>Sweet Spot — 100–200 MB per partition</div>
+        <div class="pm-leg"><div class="pm-dot" style="background:#E09A00;"></div>Overhead Zone — too many</div>
+      </div>
+    </div>
+
+    <h3>The Golden Rule of Partitioning</h3>
+
+    <div class="hl">
+      <p><strong>Aim for 100–200 MB per partition.</strong> The number of partitions should be 2–4× the total number of CPU cores in your cluster. This ensures every core has work, partitions aren't too large to fit in memory, and overhead stays manageable. For a 200-core cluster: target 400–800 partitions for large datasets.</p>
+    </div>
+
+    <h3>How to Control Partitions</h3>
+
+    <div class="code" data-lang="PYSPARK">
+<span class="cm"># Check current partition count</span>
+print(df.rdd.getNumPartitions())  <span class="cm"># e.g., returns 4</span>
+
+<span class="cm"># --- INCREASE partitions (when you have too few) ---</span>
+df_repartitioned = df.<span class="fn">repartition</span>(<span class="num">200</span>)
+<span class="cm"># repartition() does a FULL shuffle — expensive but evenly distributes data</span>
+<span class="cm"># Use when you need even distribution AND are OK with a shuffle cost</span>
+
+<span class="cm"># --- DECREASE partitions (when you have too many) ---</span>
+df_coalesced = df.<span class="fn">coalesce</span>(<span class="num">50</span>)
+<span class="cm"># coalesce() merges partitions WITHOUT a full shuffle — much cheaper!</span>
+<span class="cm"># Use after a filter that reduced data size significantly</span>
+
+<span class="cm"># --- Repartition by a COLUMN (for joins/groupBy optimization) ---</span>
+df_keyed = df.<span class="fn">repartition</span>(<span class="num">200</span>, <span class="str">"country"</span>)
+<span class="cm"># All rows with same country end up in SAME partition</span>
+<span class="cm"># Downstream groupBy("country") needs NO shuffle — data already co-located!</span>
+
+<span class="cm"># --- Control shuffle partition count globally ---</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.sql.shuffle.partitions"</span>, <span class="str">"200"</span>)
+<span class="cm"># Default is 200. For small datasets, reduce to 20-50. For huge, increase to 500+</span>
+    </div>
+
+    <h3>repartition() vs coalesce() — Critical Difference</h3>
+
+    <div class="compare">
+      <div class="cb good">
+        <span class="cb-label">USE WHEN: reducing or keyed distribution needed</span>
+        <div class="cb-title">coalesce(n)</div>
+        <p>Merges existing partitions <strong>without a full shuffle</strong>. Moves data from some partitions into others on the same or nearby machines. Very cheap. But can create unequal partition sizes. Only use to <strong>reduce</strong> partition count, not increase.</p>
+      </div>
+      <div class="cb a">
+        <span class="cb-label">USE WHEN: need even distribution or column-keyed data</span>
+        <div class="cb-title">repartition(n, col)</div>
+        <p>Does a <strong>full shuffle</strong> — every row moves across the network. Expensive. But guarantees <strong>even distribution</strong> across exactly n partitions. Can also partition <strong>by column key</strong>, co-locating related rows for future joins/groupBys.</p>
+      </div>
+    </div>
+
+    <h3>Input Partitioning — How Spark Reads Files</h3>
+
+    <p>When you read from HDFS or S3, Spark creates partitions based on the file layout. The default split size is 128MB (matching HDFS block size). One Parquet file → one partition (unless it's larger than 128MB, in which case it's split).</p>
+
+    <p>This means if you have 10,000 tiny 1KB CSV files, you get 10,000 partitions of nearly empty data. The solution: <strong>compact your input files</strong> before reading, or use <code>coalesce()</code> right after reading to merge them.</p>
+
+    <div class="tip">
+      <span class="tip-tag">💡 PRO TIP — Read-Time Partition Control</span>
+      <p>Use <code>spark.conf.set("spark.sql.files.maxPartitionBytes", "268435456")</code> to set the max partition size to 256MB at read time. Also try <code>spark.sql.files.openCostInBytes</code> to control how aggressively Spark merges small files into single partitions. Tuning these two config values alone can dramatically speed up jobs that read many small files.</p>
+    </div>
+  </div>
+</article>
+
+
+<!-- ======= CHAPTER 2: DATA SKEW ======= -->
+<article class="chapter" id="skew">
+  <div class="ch-label">Chapter 02 — The Hidden Killer</div>
+  <h2>Data <em>Skew</em> — Why One Slow Task Kills Everything</h2>
+  <p class="ch-lead">Data skew is the most common reason Spark jobs are slow in production. You can have 999 tasks complete in 30 seconds while 1 task runs for 45 minutes — and your entire job waits for that one slow task. Here's what's really happening and how to fix it.</p>
+
+  <div class="prose">
+    <p>A Stage only completes when <strong>ALL</strong> its Tasks complete. So if 999 out of 1000 Tasks finish in 30 seconds but one Task takes 45 minutes, your Stage takes 45 minutes. The whole cluster sits waiting for that one overloaded Task.</p>
+
+    <h3>What Causes Skew?</h3>
+
+    <p>Skew happens when data is <strong>unequally distributed</strong> across partitions after a shuffle. The most common cause: your groupBy or join key has values that appear far more often than others.</p>
+
+    <div class="story">
+      <span class="story-tag">📊 A Real Example of Skew</span>
+      <p>You're analyzing orders grouped by country. You have 1 billion rows. After a <code>groupBy("country")</code> shuffle, Spark creates 200 partitions.</p>
+      <p>Problem: <strong>80% of your orders are from the USA</strong>. After hashing country names to partition numbers, the partition responsible for "USA" gets 800 million rows. The partition responsible for "Vatican City" gets 12 rows.</p>
+      <p>The Task processing Vatican City: done in milliseconds. The Task processing USA: needs to aggregate 800 million rows. It might run for an hour, or run out of memory entirely and fail. Meanwhile, 199 other Tasks finished and their Executors sit idle.</p>
+      <p>This is skew. And it's extremely common in real data — think user activity (power users vs inactive users), content platforms (viral posts vs obscure ones), transaction data (big clients vs small clients).</p>
+    </div>
+
+    <!-- Skew visual bar chart -->
+    <div style="background:var(--night3);border:1px solid var(--wire);border-radius:10px;padding:20px 24px;margin:24px 0;">
+      <div style="font-family:'Fira Code',monospace;font-size:10px;letter-spacing:0.25em;color:var(--mist);margin-bottom:16px;">PARTITION SIZES AFTER groupBy("country") — Skewed Distribution</div>
+      <div style="display:flex;align-items:flex-end;gap:4px;height:100px;">
+        <div style="flex:8;background:linear-gradient(to top,var(--rose),#FF2244);border-radius:4px 4px 0 0;position:relative;display:flex;align-items:flex-start;justify-content:center;padding-top:6px;"><span style="font-family:'Fira Code',monospace;font-size:9px;color:white;">USA 80%</span></div>
+        <div style="flex:1.5;background:var(--cyan);border-radius:4px 4px 0 0;height:18%;"></div>
+        <div style="flex:1;background:var(--cyan);border-radius:4px 4px 0 0;height:12%;"></div>
+        <div style="flex:0.8;background:var(--cyan);border-radius:4px 4px 0 0;height:8%;"></div>
+        <div style="flex:0.5;background:var(--cyan);border-radius:4px 4px 0 0;height:5%;"></div>
+        <div style="flex:0.3;background:var(--wire);border-radius:4px 4px 0 0;height:3%;"></div>
+        <div style="flex:0.2;background:var(--wire);border-radius:4px 4px 0 0;height:2%;"></div>
+        <div style="flex:0.1;background:var(--wire);border-radius:4px 4px 0 0;height:1%;"></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;">
+        <span style="font-family:'Fira Code',monospace;font-size:10px;color:var(--rose);">■ Skewed partition (800M rows)</span>
+        <span style="font-family:'Fira Code',monospace;font-size:10px;color:var(--cyan);">■ Normal partitions</span>
+        <span style="font-family:'Fira Code',monospace;font-size:10px;color:var(--wire);">■ Tiny partitions</span>
+      </div>
+    </div>
+
+    <h3>Solution 1: Salting — Manually Break Up the Hot Key</h3>
+
+    <p>Salting is the most common fix. The idea: add a random "salt" number (0, 1, 2, ..., N) to your hot key, which artificially splits one giant partition into many smaller ones that can run in parallel.</p>
+
+    <div class="code" data-lang="PYSPARK">
+<span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> rand, floor, col, lit, concat
+
+<span class="cm"># PROBLEM: groupBy("country") creates one massive USA partition</span>
+
+<span class="cm"># SOLUTION: Add a salt (random 0–9) to spread USA across 10 partitions</span>
+SALT_FACTOR = <span class="num">10</span>
+
+<span class="cm"># Step 1: Add salt column to the big table</span>
+df_salted = df.<span class="fn">withColumn</span>(<span class="str">"salt"</span>, (<span class="fn">rand</span>() * SALT_FACTOR).<span class="fn">cast</span>(<span class="str">"int"</span>))
+df_salted = df_salted.<span class="fn">withColumn</span>(<span class="str">"salted_key"</span>, 
+    <span class="fn">concat</span>(col(<span class="str">"country"</span>), <span class="fn">lit</span>(<span class="str">"_"</span>), col(<span class="str">"salt"</span>))
+)
+<span class="cm"># Now "USA_0", "USA_1", ... "USA_9" — spread across 10 partitions instead of 1</span>
+
+<span class="cm"># Step 2: GroupBy the salted key — now 10 parallel tasks for USA</span>
+partial = df_salted.<span class="fn">groupBy</span>(<span class="str">"salted_key"</span>).<span class="fn">agg</span>({<span class="str">"amount"</span>:<span class="str">"sum"</span>})
+
+<span class="cm"># Step 3: Extract original key and do a SECOND aggregation to merge salts</span>
+result = partial \
+  .<span class="fn">withColumn</span>(<span class="str">"country"</span>, <span class="fn">split</span>(col(<span class="str">"salted_key"</span>), <span class="str">"_"</span>)[<span class="num">0</span>]) \
+  .<span class="fn">groupBy</span>(<span class="str">"country"</span>) \
+  .<span class="fn">agg</span>({<span class="str">"sum(amount)"</span>:<span class="str">"sum"</span>})
+<span class="cm"># Two-phase aggregation. More code, but USA now runs 10 parallel tasks.</span>
+    </div>
+
+    <h3>Solution 2: Broadcast Joins (for join skew)</h3>
+    <p>If your skew comes from a join and one side is small enough to fit in memory, use a broadcast join. This eliminates the shuffle entirely — no shuffle means no skew possible. (More on this in the Joins chapter.)</p>
+
+    <h3>Solution 3: Spark 3.0+ Adaptive Query Execution (AQE)</h3>
+    <p>Spark 3.0 introduced <strong>Adaptive Query Execution</strong> — a game changer. AQE monitors your job <em>while it runs</em>, detects skewed partitions, and automatically splits them mid-execution. You don't need to write salting code manually.</p>
+
+    <div class="code" data-lang="PYSPARK">
+<span class="cm"># Enable AQE (default ON in Spark 3.2+)</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.sql.adaptive.enabled"</span>, <span class="str">"true"</span>)
+
+<span class="cm"># AQE skew join handling — automatically detects and splits skewed partitions</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.sql.adaptive.skewJoin.enabled"</span>, <span class="str">"true"</span>)
+
+<span class="cm"># A partition is considered skewed if it's > 5× median size AND > 256MB</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.sql.adaptive.skewJoin.skewedPartitionFactor"</span>, <span class="str">"5"</span>)
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.sql.adaptive.skewJoin.skewedPartitionThresholdInBytes"</span>, <span class="str">"268435456"</span>)
+
+<span class="cm"># AQE also dynamically coalesces too-many small shuffle partitions</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.sql.adaptive.coalescePartitions.enabled"</span>, <span class="str">"true"</span>)
+    </div>
+
+    <div class="tip">
+      <span class="tip-tag">✅ RULE OF THUMB</span>
+      <p>If you're on <strong>Spark 3.2+</strong>, enable AQE and let it handle most skew automatically. For Spark 2.x or extreme skew cases where AQE isn't enough, use manual salting. Always check your Spark UI for "Task Duration" variability within a Stage — if most tasks take 5 seconds but one takes 30 minutes, you have skew.</p>
+    </div>
+  </div>
+</article>
+
+
+<!-- ======= CHAPTER 3: JOINS ======= -->
+<article class="chapter" id="joins">
+  <div class="ch-label">Chapter 03 — The Most Complex Operation</div>
+  <h2>Joins — <em>How Spark Combines Two Datasets</em></h2>
+  <p class="ch-lead">Joins are everywhere in data processing. But in a distributed system, joining two tables spread across 100 machines is a fundamentally hard problem. Spark has multiple join strategies, and choosing the wrong one is one of the most common causes of slow jobs.</p>
+
+  <div class="prose">
+    <p>When you join two DataFrames in a traditional database, both tables are on the same machine — the database engine can just look up matching rows directly. In Spark, your left table might be across 100 machines and your right table across another 100 machines. <strong>How do you match rows when they could be on completely different machines?</strong></p>
+
+    <h3>Join Strategy 1: Broadcast Hash Join (The Fast One)</h3>
+
+    <p>This is the <strong>fastest join strategy</strong> and should be your first choice whenever possible. It works when one of the two tables is small enough to fit entirely in each Executor's memory (typically under 10MB, configurable up to ~8GB).</p>
+
+    <div class="story">
+      <span class="story-tag">📡 How Broadcast Join Works</span>
+      <p>Imagine you're joining a billion-row orders table with a 200-row countries lookup table. The countries table is tiny.</p>
+      <p>Spark broadcasts the tiny table: it copies the <strong>entire countries table into every single Executor's memory</strong>. Now every Executor already has the full countries table locally. Each Executor processes its partition of the orders table and looks up matching country rows <strong>locally</strong> — no network transfer needed at all.</p>
+      <p>Zero shuffle. Zero network bottleneck. The large table never moves. Just the small table gets broadcast (copied) once to every Executor, and all joins happen locally at RAM speed. This is as fast as a join can get in a distributed system.</p>
+    </div>
+
+    <div class="code" data-lang="PYSPARK">
+<span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> broadcast
+
+<span class="cm"># Spark auto-detects when to broadcast (threshold: spark.sql.autoBroadcastJoinThreshold)</span>
+<span class="cm"># Default is 10MB. If small_table is under 10MB, Spark broadcasts automatically.</span>
+
+<span class="cm"># Force a broadcast join explicitly (when you KNOW it fits in memory)</span>
+result = large_orders_df.<span class="fn">join</span>(
+    <span class="fn">broadcast</span>(small_countries_df),  <span class="cm"># Hint to Spark: broadcast this</span>
+    on=<span class="str">"country_id"</span>,
+    how=<span class="str">"left"</span>
+)
+
+<span class="cm"># Increase the auto-broadcast threshold (e.g., allow tables up to 100MB)</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.sql.autoBroadcastJoinThreshold"</span>, <span class="num">104857600</span>)  <span class="cm"># 100 MB</span>
+
+<span class="cm"># Disable auto-broadcast (if Spark is broadcasting something too large)</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.sql.autoBroadcastJoinThreshold"</span>, <span class="num">-1</span>)
+    </div>
+
+    <h3>Join Strategy 2: Sort-Merge Join (The Default for Large Tables)</h3>
+
+    <p>When both tables are large, Spark uses a <strong>Sort-Merge Join</strong>. This is the default for large-large joins. It's expensive but handles any dataset size.</p>
+
+    <div class="flow">
+      <div class="flow-title">SORT-MERGE JOIN — Step by Step</div>
+      <div class="flow-row">
+        <div class="fstep">
+          <div class="fstep-num">01</div>
+          <div class="fstep-body">
+            <strong>Shuffle Both Tables by Join Key</strong>
+            <span>Both DataFrames are shuffled so that all rows with the same join key end up on the <em>same machine</em>. This is the expensive part — two full shuffles across the network. All "USA" rows from orders AND all "USA" rows from the other table go to the same Executor.</span>
+          </div>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="fstep">
+          <div class="fstep-num">02</div>
+          <div class="fstep-body">
+            <strong>Sort Each Partition by Join Key</strong>
+            <span>Each Executor sorts its partition of both tables by the join key. Both sides are now sorted — "USA" rows together in order.</span>
+          </div>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="fstep">
+          <div class="fstep-num">03</div>
+          <div class="fstep-body">
+            <strong>Merge — Walk Both Sorted Lists Together</strong>
+            <span>Like merging two sorted decks of cards. Both pointers advance through their sorted lists simultaneously, matching rows with the same key. Since both are sorted, you only need one pass through each side. This is very CPU efficient.</span>
+          </div>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="fstep">
+          <div class="fstep-num">04</div>
+          <div class="fstep-body">
+            <strong>Output Matched Rows</strong>
+            <span>Each matched pair is emitted as a joined row. Result is distributed across all Executors — no bottleneck through the Driver.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Join Strategy 3: Hash Join / Shuffle Hash Join</h3>
+
+    <p>An older strategy where one side (the smaller one) is loaded into a hash table in memory, and the other side is probed against it. Faster than Sort-Merge for moderate-sized tables but requires enough memory to hold the hash table. Sort-Merge is preferred in modern Spark because it doesn't have this memory constraint.</p>
+
+    <h3>Join Types — LEFT, RIGHT, INNER, FULL, CROSS, SEMI, ANTI</h3>
+
+    <p>Beyond the physical strategy (how Spark moves data), you also choose the logical join type (which rows to keep):</p>
+
+    <table class="tbl">
+      <tr><th>Join Type</th><th>Rows Kept</th><th>Common Use Case</th></tr>
+      <tr><td><strong>INNER</strong></td><td>Only rows matching in BOTH tables</td><td>Orders joined to existing customers only</td></tr>
+      <tr><td><strong>LEFT OUTER</strong></td><td>All left rows + matching right (NULL for no match)</td><td>All orders, with customer details if exists</td></tr>
+      <tr><td><strong>RIGHT OUTER</strong></td><td>All right rows + matching left</td><td>All customers, with their orders if any</td></tr>
+      <tr><td><strong>FULL OUTER</strong></td><td>All rows from both sides (NULL for no match)</td><td>Audit: find everything in either table</td></tr>
+      <tr><td><strong>LEFT SEMI</strong></td><td>Left rows that HAVE a match in right (no right columns)</td><td>Filter: orders that have a valid product</td></tr>
+      <tr><td><strong>LEFT ANTI</strong></td><td>Left rows that have NO match in right</td><td>Find orphaned orders with no product</td></tr>
+      <tr><td><strong>CROSS</strong></td><td>Every combination (Cartesian product)</td><td>⚠ DANGEROUS — N×M rows. Use only intentionally.</td></tr>
+    </table>
+
+    <h3>The Biggest Join Mistakes</h3>
+
+    <ul class="cklist">
+      <li><span class="ci">❌</span><div><strong>Accidental Cartesian join:</strong> Forgetting to specify a join key. <code>df1.join(df2)</code> with no condition → a Cross join → billions × millions = disaster.</div></li>
+      <li><span class="ci">❌</span><div><strong>Not broadcasting small tables:</strong> If your lookup table is 5MB and you're not broadcasting it, Spark does an unnecessary shuffle. Set the broadcast threshold or use <code>broadcast()</code> explicitly.</div></li>
+      <li><span class="ci">❌</span><div><strong>Joining before filtering:</strong> Always filter both DataFrames down to only the rows you need <em>before</em> the join. Less data to shuffle = faster join.</div></li>
+      <li><span class="ci">❌</span><div><strong>Joining on non-unique keys:</strong> If your join key has duplicates on both sides, you get an explosion of rows. A key appearing 100 times on left and 100 times on right = 10,000 result rows for that key. Check for duplicates first.</div></li>
+    </ul>
+  </div>
+</article>
+
+
+<!-- ======= CHAPTER 4: CATALYST ======= -->
+<article class="chapter" id="catalyst">
+  <div class="ch-label">Chapter 04 — The Brain Inside the Engine</div>
+  <h2>Catalyst Optimizer — <em>How Spark Thinks About Your Query</em></h2>
+  <p class="ch-lead">When you write a DataFrame transformation or SQL query in Spark, you don't directly tell Spark how to execute it. Instead, Catalyst — Spark's query optimizer — takes your intent and figures out the most efficient way to actually run it. This is one of Spark's most sophisticated components.</p>
+
+  <div class="prose">
+    <p>Think of Catalyst as an expert chess player. You tell it "I want to win the game." It figures out the exact sequence of moves. You write <code>filter → groupBy → orderBy</code>. Catalyst might decide to reorder things, push filters down, eliminate redundant steps, and choose different physical algorithms — all to execute your intent as efficiently as possible.</p>
+
+    <div class="optimizer">
+      <div class="opt-header">CATALYST OPTIMIZER — 4 PHASE PIPELINE</div>
+      <div class="opt-phases">
+        <div class="opt-phase">
+          <div class="opt-icon">📖</div>
+          <span class="opt-title">Phase 1<br/>Analysis</span>
+          <div class="opt-desc">Resolve column names and table references. Build an unresolved logical plan. Check your schema: "does column 'amount' exist in this DataFrame?" If not, fail early with a clear error.</div>
+        </div>
+        <div class="opt-phase">
+          <div class="opt-icon">🧩</div>
+          <span class="opt-title">Phase 2<br/>Logical Optimization</span>
+          <div class="opt-desc">Apply logical rules: push filters early (predicate pushdown), eliminate unnecessary columns (column pruning), fold constants, combine multiple filters into one. Pure logical — no physical decisions yet.</div>
+        </div>
+        <div class="opt-phase">
+          <div class="opt-icon">⚡</div>
+          <span class="opt-title">Phase 3<br/>Physical Planning</span>
+          <div class="opt-desc">Translate the logical plan into one or more physical plans. Choose join strategy (broadcast vs sort-merge). Generate multiple candidates and use the Cost Model to pick the cheapest one.</div>
+        </div>
+        <div class="opt-phase">
+          <div class="opt-icon">🔧</div>
+          <span class="opt-title">Phase 4<br/>Code Generation</span>
+          <div class="opt-desc">Generate Java bytecode for the chosen physical plan. Uses Tungsten's Whole-Stage Code Generation to compile your query into one tight loop — eliminating virtual function call overhead.</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Predicate Pushdown — The Most Important Optimization</h3>
+
+    <p>Predicate pushdown is Catalyst's single most impactful optimization. The idea: push your filters as early as possible in the execution — ideally all the way down into the data reader, so you never even read the data you'd filter out anyway.</p>
+
+    <div class="story">
+      <span class="story-tag">📁 Predicate Pushdown with Parquet</span>
+      <p>You have a 1TB Parquet file on S3. You write: <code>spark.read.parquet("s3://orders/").filter("year = 2024")</code>.</p>
+      <p>Without pushdown: Spark reads all 1TB into memory, then filters out rows where year ≠ 2024. Slow. Expensive. Wastes network bandwidth.</p>
+      <p>With pushdown (what actually happens): Parquet files store metadata about min/max values for each column in each row group. Catalyst pushes your <code>year = 2024</code> filter down into the Parquet reader. The reader checks: "does this row group contain any rows where year = 2024?" If no, it skips the entire row group without reading it. If your 1TB file is mostly 2019–2023 data, you might read only 80GB instead of 1TB. <strong>12× less I/O, 12× faster read.</strong></p>
+    </div>
+
+    <h3>Column Pruning — Only Read What You Need</h3>
+
+    <p>If your DataFrame has 100 columns but your query only uses 3, Catalyst tells the data reader to only read those 3 columns. Parquet is a columnar format, so reading 3 of 100 columns means reading 3% of the data. Again, happening automatically, invisibly.</p>
+
+    <div class="code" data-lang="PYSPARK">
+<span class="cm"># You write this:</span>
+result = spark.read.<span class="fn">parquet</span>(<span class="str">"s3://huge_table/"</span>) \
+              .<span class="fn">filter</span>(<span class="str">"year = 2024 AND country = 'India'"</span>) \
+              .<span class="fn">select</span>(<span class="str">"order_id"</span>, <span class="str">"amount"</span>, <span class="str">"customer_id"</span>) \
+              .<span class="fn">groupBy</span>(<span class="str">"customer_id"</span>) \
+              .<span class="fn">agg</span>({<span class="str">"amount"</span>:<span class="str">"sum"</span>})
+
+<span class="cm"># What Catalyst ACTUALLY executes:</span>
+<span class="cm">#   1. Read from Parquet: only columns [year, country, order_id, amount, customer_id]</span>
+<span class="cm">#      → Column pruning! (say table has 80 columns — now reading only 5)</span>
+<span class="cm">#   2. Skip Parquet row groups where year ≠ 2024 OR country ≠ 'India'</span>
+<span class="cm">#      → Predicate pushdown! (maybe 95% of data skipped at read time)</span>
+<span class="cm">#   3. Apply remaining filter in memory</span>
+<span class="cm">#   4. GroupBy + sum</span>
+<span class="cm"># You wrote the same code. Catalyst made it dramatically more efficient.</span>
+
+<span class="cm"># See what Catalyst actually planned:</span>
+result.<span class="fn">explain</span>(extended=<span class="kw">True</span>)  <span class="cm"># Shows all 4 plan phases</span>
+    </div>
+
+    <h3>Understanding explain() — Reading the Execution Plan</h3>
+
+    <p><code>explain()</code> is your window into what Catalyst is doing. Call it on any DataFrame before running an action. Learn to read it — it tells you exactly what Spark will do and reveals optimization opportunities.</p>
+
+    <div class="code" data-lang="OUTPUT">
+<span class="cm">== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false                          ← AQE enabled
++- == Final Plan ==
+   SortAggregate(key=[customer_id], functions=[sum(amount)])  ← aggregation
+   +- Sort [customer_id ASC]                                  ← sort for merge
+      +- Exchange hashpartitioning(customer_id, 200)          ← SHUFFLE HERE ← expensive
+         +- Filter (year = 2024 AND country = India)          ← filter pushed down
+            +- FileScan parquet [order_id, amount, customer_id, year, country]
+               PartitionFilters: [year = 2024]                ← partition pruning
+               PushedFilters: [IsNotNull(country), EqualTo(country, India)]
+               ReadSchema: struct&lt;order_id:long, amount:double, customer_id:long&gt;
+                                  ↑ only 5 of 80 columns read — column pruning!</span>
+    </div>
+
+    <p>Read the plan from <strong>bottom to top</strong> — that's the execution order. Learn to spot: Are filters pushed down? Are unnecessary columns pruned? Is the join strategy what you expected (BroadcastHashJoin vs SortMergeJoin)? Is there an unexpected shuffle? These questions will guide your optimization work.</p>
+  </div>
+</article>
+
+
+<!-- ======= CHAPTER 5: TUNGSTEN ======= -->
+<article class="chapter" id="tungsten">
+  <div class="ch-label">Chapter 05 — The Speed Engine</div>
+  <h2>Tungsten — <em>How Spark Squeezes Every CPU Cycle</em></h2>
+  <p class="ch-lead">Catalyst optimizes your query plan. But who actually makes the physical execution fast at the CPU level? That's Tungsten — Spark's secret weapon for raw execution performance. It reimagines how Spark stores and processes data in memory.</p>
+
+  <div class="prose">
+    <p>Before Tungsten (Spark < 1.4), Spark stored all data as Java objects on the JVM heap. This sounds fine, but Java objects have massive overhead. A simple integer stored as a Java Integer object uses 16 bytes of memory — 4 bytes for the actual number, 12 bytes for JVM object overhead (header, reference pointer, alignment). For a billion numbers, that's 12GB of wasted memory just for bookkeeping.</p>
+
+    <p>Worse, the JVM's garbage collector (GC) periodically scans all these objects to clean up unused ones. During GC, your Spark job <em>pauses</em>. For large datasets with millions of objects, GC pauses can last several minutes, killing performance.</p>
+
+    <h3>Tungsten Fix 1: Off-Heap Binary Storage</h3>
+
+    <p>Tungsten stores data in a <strong>compact binary format</strong> in off-heap memory (memory outside the JVM heap, managed directly like C/C++). An integer is just 4 bytes. A row of 10 integers is exactly 40 bytes plus a small header. No Java object overhead. No GC involvement.</p>
+
+    <p>This makes Spark 2–5× more memory-efficient, and virtually eliminates GC pauses for large datasets. Operations on compact binary data are also faster because they fit better in CPU cache.</p>
+
+    <h3>Tungsten Fix 2: Whole-Stage Code Generation (WSCG)</h3>
+
+    <p>This is Tungsten's crown jewel. Normally, Spark processes data through a chain of operators — each operator is a separate object that calls a <code>process()</code> method. For each row, the data bounces from operator to operator through virtual function calls. This constant method dispatch overhead adds up massively for billions of rows.</p>
+
+    <div class="compare">
+      <div class="cb bad">
+        <span class="cb-label">OLD WAY — Volcano Model</span>
+        <div class="cb-title">Per-Row Virtual Calls</div>
+        <p>For each row: call Filter.process() → call Map.process() → call Aggregate.process(). Each call is a virtual dispatch. 1 billion rows × 3 operators = 3 billion virtual function calls. CPU branch mispredictions everywhere. Very slow.</p>
+      </div>
+      <div class="cb good">
+        <span class="cb-label">TUNGSTEN — Whole-Stage Codegen</span>
+        <div class="cb-title">One Compiled Loop</div>
+        <p>Catalyst + Tungsten compile the entire pipeline into <strong>one tight Java for-loop</strong>. Filter + Map + Aggregate all fused into a single loop body. One pass through the data. No virtual calls. No function bouncing. Runs at speeds close to hand-written C code.</p>
+      </div>
+    </div>
+
+    <div class="code" data-lang="GENERATED CODE (CONCEPTUAL)">
+<span class="cm">// What Tungsten actually generates — one tight loop:</span>
+<span class="kw">for</span> (row : partition) {
+    <span class="cm">// Filter operator inlined:</span>
+    <span class="kw">if</span> (row.amount > <span class="num">1000</span>) {
+        <span class="cm">// Map operator inlined:</span>
+        <span class="kw">long</span> key = row.country_id;
+        <span class="kw">double</span> val = row.amount * <span class="num">1.1</span>;
+        <span class="cm">// Aggregate operator inlined:</span>
+        hashMap[key] += val;
+    }
+}
+<span class="cm">// Instead of 3 billion virtual calls — one loop. Near C++ speed.</span>
+    </div>
+
+    <h3>Tungsten Fix 3: Cache-Aware Algorithms</h3>
+
+    <p>Modern CPUs have a hierarchy of caches (L1: 64KB, L2: 512KB, L3: 8-32MB, RAM: GBs). Accessing L1 cache takes 1 nanosecond. Accessing RAM takes 100 nanoseconds. Tungsten designs its sort and aggregation algorithms to work within CPU cache boundaries — keeping "hot" data in L1/L2 cache rather than going to main memory. This 100× speed difference compounds enormously at scale.</p>
+
+    <div class="hl">
+      <p><strong>The combined effect of Catalyst + Tungsten:</strong> A Spark SQL query on DataFrames can run <strong>10–100× faster</strong> than equivalent raw RDD code written by hand. This is why using DataFrames/SQL instead of raw RDDs is almost always the right choice. You get better performance automatically.</p>
+    </div>
+  </div>
+</article>
+
+
+<!-- ======= CHAPTER 6: STRUCTURED STREAMING ======= -->
+<article class="chapter" id="streaming">
+  <div class="ch-label">Chapter 06 — Real-Time Data</div>
+  <h2>Structured Streaming — <em>How Spark Processes Data as It Arrives</em></h2>
+  <p class="ch-lead">Batch processing works on data that already exists. But what about data arriving right now — stock prices, user clicks, IoT sensors, fraud transactions? Structured Streaming is Spark's answer. And the clever part: it uses the exact same DataFrame API you already know.</p>
+
+  <div class="prose">
+    <p>The fundamental mental model of Structured Streaming: your streaming data source is an <strong>infinite table</strong> that keeps growing forever. New events are new rows appended to this table. Your streaming query is a standing query on this table that continuously produces results as new rows arrive.</p>
+
+    <div class="stream-diag">
+      <div class="sd-source">
+        <span style="font-size:24px;">📡</span>
+        <div>
+          <span class="sd-label">KAFKA TOPIC (continuous stream of events)</span>
+          <div style="font-size:13px;color:var(--mist);">Events arrive continuously — purchases, clicks, sensor readings</div>
+        </div>
+      </div>
+      <div class="sd-flow">
+        <div class="sd-event">{"user":"U1","amt":99}</div>
+        <div class="sd-arrow-sm">→</div>
+        <div class="sd-event">{"user":"U4","amt":2300}</div>
+        <div class="sd-arrow-sm">→</div>
+        <div class="sd-event">{"user":"U1","amt":45}</div>
+        <div class="sd-arrow-sm">→</div>
+        <div class="sd-event">{"user":"U7","amt":890}</div>
+        <div class="sd-arrow-sm">→</div>
+        <div class="sd-batch">Every 5 sec: Spark reads<br/>new events as a micro-batch<br/>→ process → update output</div>
+      </div>
+    </div>
+
+    <h3>The Trigger — How Often Does Spark Process?</h3>
+
+    <p>You control how frequently Spark processes new data with a <strong>trigger</strong>:</p>
+
+    <table class="tbl">
+      <tr><th>Trigger Type</th><th>Behavior</th><th>Use Case</th></tr>
+      <tr><td><strong>ProcessingTime</strong></td><td>Run every N seconds (e.g., every 5s). Fixed interval micro-batches.</td><td>Most common. Balances latency and throughput.</td></tr>
+      <tr><td><strong>Once</strong></td><td>Process all available data, then stop.</td><td>Scheduled batch runs using streaming semantics.</td></tr>
+      <tr><td><strong>AvailableNow</strong></td><td>Like Once but with multiple micro-batches.</td><td>Spark 3.3+. Faster bulk processing of available data.</td></tr>
+      <tr><td><strong>Continuous</strong></td><td>True millisecond latency (experimental). Very low trigger overhead.</td><td>When you need sub-second latency. Limited operators.</td></tr>
+    </table>
+
+    <h3>Output Modes — What Do You Write Each Trigger?</h3>
+
+    <p>After each micro-batch, Spark needs to write results to your output sink. But what should it write — everything, or just what changed?</p>
+
+    <div class="compare">
+      <div class="cb a">
+        <span class="cb-label">APPEND MODE</span>
+        <div class="cb-title">Append</div>
+        <p>Only write <strong>new rows added</strong> this micro-batch. Nothing old is re-written. Use for event logs, time-series tables where old data never changes. <strong>Cannot be used with aggregations</strong> (aggregate results change as new data arrives).</p>
+      </div>
+      <div class="cb b">
+        <span class="cb-label">COMPLETE MODE</span>
+        <div class="cb-title">Complete</div>
+        <p>Rewrite the <strong>entire result table</strong> every trigger. Use for aggregations where you want to always show the full current state (e.g., "total sales by country so far"). Every write is a full overwrite.</p>
+      </div>
+    </div>
+
+    <div class="cb" style="margin:8px 0 28px;border-color:rgba(139,92,246,0.3);background:rgba(139,92,246,0.05);padding:24px;">
+      <span class="cb-label" style="color:var(--violet);">UPDATE MODE</span>
+      <div class="cb-title" style="color:var(--white);">Update</div>
+      <p style="color:var(--mist);font-size:14px;margin:0;">Only write rows that <strong>changed</strong> this trigger. For aggregations, only output the aggregate rows that were updated. More efficient than Complete for large result sets. Not all sinks support it.</p>
+    </div>
+
+    <h3>Stateful Streaming — Remembering Across Micro-Batches</h3>
+
+    <p>Simple transformations (filter, select, map) are stateless — each micro-batch is processed independently. But aggregations (count, sum, distinct) and windowed operations require <strong>state</strong> — remembering what happened in previous micro-batches to compute running totals.</p>
+
+    <div class="story">
+      <span class="story-tag">🧠 How State Works Internally</span>
+      <p>You want a running count of orders per user. After micro-batch 1, user U1 has 5 orders. After micro-batch 2, user U1 has 3 more orders. Total: 8.</p>
+      <p>But where is the "5" stored between micro-batches? In Spark's <strong>State Store</strong> — a distributed key-value store backed by RocksDB (an embedded key-value database). Each Executor maintains a state partition keyed by the groupBy key (user ID). After each micro-batch, state is updated and written to a checkpoint location (HDFS or S3).</p>
+      <p>If an Executor crashes mid-stream, Spark reads the last checkpoint, replays the Kafka messages since that checkpoint, and recovers exactly where it left off. This gives you <strong>exactly-once processing semantics</strong> — even with failures.</p>
+    </div>
+
+    <h3>Watermarking — Handling Late Data</h3>
+
+    <p>In real streaming, data arrives late. A mobile app event generated at 10:00 AM might not arrive until 10:30 AM due to network issues. If you're doing time-window aggregations (e.g., "orders per 10-minute window"), late data is a problem.</p>
+
+    <p>A <strong>watermark</strong> tells Spark: "data can arrive up to X hours late. Accept late data within that window. After X hours, discard late data and free the state."</p>
+
+    <div class="code" data-lang="PYSPARK — COMPLETE STREAMING EXAMPLE">
+<span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> window, sum, col
+
+<span class="cm"># 1. Read from Kafka (streaming source)</span>
+stream = spark \
+  .readStream \
+  .<span class="fn">format</span>(<span class="str">"kafka"</span>) \
+  .<span class="fn">option</span>(<span class="str">"kafka.bootstrap.servers"</span>, <span class="str">"kafka:9092"</span>) \
+  .<span class="fn">option</span>(<span class="str">"subscribe"</span>, <span class="str">"orders"</span>) \
+  .<span class="fn">load</span>() \
+  .<span class="fn">selectExpr</span>(<span class="str">"CAST(value AS STRING) as json"</span>) \
+  .<span class="fn">select</span>(<span class="fn">from_json</span>(col(<span class="str">"json"</span>), schema).<span class="fn">alias</span>(<span class="str">"data"</span>)) \
+  .<span class="fn">select</span>(<span class="str">"data.*"</span>)
+
+<span class="cm"># 2. Add watermark: tolerate up to 30 minutes of late data</span>
+watermarked = stream.<span class="fn">withWatermark</span>(<span class="str">"event_time"</span>, <span class="str">"30 minutes"</span>)
+
+<span class="cm"># 3. Window aggregation: sum revenue per 10-min window per country</span>
+windowed = watermarked \
+  .<span class="fn">groupBy</span>(
+      <span class="fn">window</span>(col(<span class="str">"event_time"</span>), <span class="str">"10 minutes"</span>),
+      col(<span class="str">"country"</span>)
+  ) \
+  .<span class="fn">agg</span>(<span class="fn">sum</span>(<span class="str">"amount"</span>).<span class="fn">alias</span>(<span class="str">"total_revenue"</span>))
+
+<span class="cm"># 4. Write to Delta Lake sink (update mode — only write changed windows)</span>
+query = windowed \
+  .writeStream \
+  .<span class="fn">format</span>(<span class="str">"delta"</span>) \
+  .<span class="fn">outputMode</span>(<span class="str">"update"</span>) \
+  .<span class="fn">option</span>(<span class="str">"checkpointLocation"</span>, <span class="str">"s3://checkpoints/orders-agg/"</span>) \
+  .<span class="fn">trigger</span>(processingTime=<span class="str">"30 seconds"</span>) \
+  .<span class="fn">start</span>(<span class="str">"s3://output/orders-by-window/"</span>)
+
+query.<span class="fn">awaitTermination</span>()  <span class="cm"># Keep running forever</span>
+    </div>
+
+    <h3>Checkpointing — Why It's Not Optional</h3>
+
+    <p>The <code>checkpointLocation</code> option above is mandatory for stateful streaming. Every trigger, Spark writes the current state and Kafka offset to the checkpoint location. This gives you:</p>
+
+    <ul class="cklist">
+      <li><span class="ci">✅</span><div><strong>Exactly-once semantics:</strong> Even if Spark crashes mid-trigger, it restarts from the last checkpoint and replays only the unprocessed messages.</div></li>
+      <li><span class="ci">✅</span><div><strong>State recovery:</strong> All running totals, window aggregations, and custom state survive restarts because they're persisted to the checkpoint.</div></li>
+      <li><span class="ci">✅</span><div><strong>Offset tracking:</strong> Spark remembers exactly which Kafka offset it last processed per partition — so no messages are replayed twice or skipped.</div></li>
+    </ul>
+
+    <div class="warn">
+      <span class="warn-tag">⚠ NEVER CHANGE SCHEMA WITHOUT CLEARING CHECKPOINT</span>
+      <p>If you change your streaming query (add a new column, change a transformation, change output mode) and restart with the old checkpoint, Spark will fail with an incompatibility error. You <strong>must delete the checkpoint directory</strong> when making structural changes to a streaming query. This means losing accumulated state — plan schema changes carefully in production.</p>
+    </div>
+  </div>
+</article>
+
+
+<!-- ======= CHAPTER 7: DELTA LAKE ======= -->
+<article class="chapter" id="delta">
+  <div class="ch-label">Chapter 07 — The Modern Data Lake Layer</div>
+  <h2>Delta Lake — <em>Making Your Data Lake Actually Reliable</em></h2>
+  <p class="ch-lead">Raw data lakes (just files on S3/HDFS) are notoriously unreliable — no ACID transactions, no schema enforcement, no easy updates. Delta Lake is an open-source storage layer that adds all of this on top of Parquet files. In 2024, most serious Spark deployments use Delta Lake.</p>
+
+  <div class="prose">
+    <p>Imagine a data lake as a warehouse where anyone can dump files. Files named <code>data_final_v2_ACTUALLY_FINAL_USE_THIS.parquet</code>. No clear record of what changed when. If a write fails halfway, you have corrupted partial data. If you need to update a row, you have to rewrite entire files. If you accidentally delete something, it's gone.</p>
+
+    <p>Delta Lake solves all of this by adding a <strong>transaction log</strong> — a directory called <code>_delta_log</code> — alongside your Parquet data files. Every operation (write, update, delete) is recorded as a JSON entry in this log. Parquet files are never mutated — new versions are written and old ones are marked as deleted in the log.</p>
+
+    <div class="delta-layers">
+      <div class="dl-layer">
+        <div class="dl-icon">📓</div>
+        <div>
+          <div class="dl-name">Transaction Log (_delta_log/)</div>
+          <div class="dl-desc">JSON files recording every change: which files were added, which removed, schema changes, operation metadata. This is the source of truth. Enables time travel, ACID guarantees, and schema enforcement.</div>
+        </div>
+      </div>
+      <div class="dl-layer">
+        <div class="dl-icon">📁</div>
+        <div>
+          <div class="dl-name">Data Files (Parquet)</div>
+          <div class="dl-desc">Immutable Parquet files containing actual data. Written once, never modified. Deletes and updates write new files — old files are logically removed via the transaction log but physically retained for time travel.</div>
+        </div>
+      </div>
+      <div class="dl-layer">
+        <div class="dl-icon">📊</div>
+        <div>
+          <div class="dl-name">Statistics & Min/Max (per file)</div>
+          <div class="dl-desc">Delta stores min/max values for key columns in each data file. Used for Data Skipping — when you filter by date, Delta skips entire files whose date range doesn't overlap your filter. Massive I/O reduction.</div>
+        </div>
+      </div>
+      <div class="dl-layer">
+        <div class="dl-icon">🗺️</div>
+        <div>
+          <div class="dl-name">Z-Order Clustering (optional)</div>
+          <div class="dl-desc">Physically co-locate related data in the same files using Z-order space-filling curves. If you often filter by (date, country) together, Z-ordering on both makes those files much more likely to match both filters simultaneously.</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>ACID Transactions — What They Mean for You</h3>
+
+    <p>Delta Lake gives you database-grade ACID guarantees on your data lake:</p>
+
+    <table class="tbl">
+      <tr><th>Property</th><th>What It Means</th><th>Why It Matters</th></tr>
+      <tr><td><strong>Atomicity</strong></td><td>A write either fully succeeds or fully fails. No partial writes.</td><td>If your ETL job crashes halfway, the table is unchanged. No corrupt half-written data.</td></tr>
+      <tr><td><strong>Consistency</strong></td><td>Schema is enforced. Bad data is rejected.</td><td>Schema evolution is controlled. No accidental type changes breaking downstream queries.</td></tr>
+      <tr><td><strong>Isolation</strong></td><td>Concurrent readers and writers don't interfere.</td><td>You can run a batch write AND simultaneously query the table — readers see a consistent snapshot.</td></tr>
+      <tr><td><strong>Durability</strong></td><td>Committed data persists even after crashes.</td><td>Once Delta says "write succeeded," the data is safe — backed by S3/HDFS durability.</td></tr>
+    </table>
+
+    <h3>Time Travel — Query Any Historical Version</h3>
+
+    <p>Because Delta keeps all old Parquet files and records every version in the log, you can query the table as it was at any point in time. This is invaluable for debugging, auditing, and recovering from mistakes.</p>
+
+    <div class="code" data-lang="PYSPARK — DELTA LAKE OPERATIONS">
+<span class="kw">from</span> delta.tables <span class="kw">import</span> DeltaTable
+
+<span class="cm"># Write a Delta table</span>
+df.<span class="fn">write</span>.<span class="fn">format</span>(<span class="str">"delta"</span>).<span class="fn">save</span>(<span class="str">"s3://datalake/orders/"</span>)
+
+<span class="cm"># --- TIME TRAVEL ---</span>
+<span class="cm"># Query table as it was at version 5</span>
+df_v5 = spark.read.<span class="fn">format</span>(<span class="str">"delta"</span>) \
+              .<span class="fn">option</span>(<span class="str">"versionAsOf"</span>, <span class="num">5</span>) \
+              .<span class="fn">load</span>(<span class="str">"s3://datalake/orders/"</span>)
+
+<span class="cm"># Query table as it was at a specific timestamp</span>
+df_yesterday = spark.read.<span class="fn">format</span>(<span class="str">"delta"</span>) \
+                    .<span class="fn">option</span>(<span class="str">"timestampAsOf"</span>, <span class="str">"2024-01-15 12:00:00"</span>) \
+                    .<span class="fn">load</span>(<span class="str">"s3://datalake/orders/"</span>)
+
+<span class="cm"># --- UPSERT (MERGE) — update existing rows, insert new ones ---</span>
+delta_table = DeltaTable.<span class="fn">forPath</span>(spark, <span class="str">"s3://datalake/orders/"</span>)
+
+delta_table.<span class="fn">alias</span>(<span class="str">"target"</span>).<span class="fn">merge</span>(
+    new_data.<span class="fn">alias</span>(<span class="str">"source"</span>),
+    <span class="str">"target.order_id = source.order_id"</span>
+).<span class="fn">whenMatchedUpdate</span>(set={<span class="str">"status"</span>: <span class="str">"source.status"</span>, <span class="str">"updated_at"</span>: <span class="str">"source.updated_at"</span>}) \
+ .<span class="fn">whenNotMatchedInsertAll</span>() \
+ .<span class="fn">execute</span>()
+<span class="cm"># MERGE is huge: previously, updating rows in Parquet required rewriting entire files.</span>
+<span class="cm"># Delta handles this efficiently — only affected files are rewritten.</span>
+
+<span class="cm"># --- OPTIMIZE — compact small files + Z-order ---</span>
+delta_table.<span class="fn">optimize</span>().<span class="fn">executeZOrderBy</span>(<span class="str">"date"</span>, <span class="str">"country"</span>)
+<span class="cm"># Compacts many small files into fewer large ones (fixes small files problem)</span>
+<span class="cm"># Z-orders by (date, country) — co-locates related data for faster filtering</span>
+
+<span class="cm"># --- VACUUM — delete old files beyond retention period ---</span>
+delta_table.<span class="fn">vacuum</span>(retentionHours=<span class="num">168</span>)  <span class="cm"># Keep 7 days of history</span>
+    </div>
+
+    <div class="tip">
+      <span class="tip-tag">🏗️ LAKEHOUSE ARCHITECTURE</span>
+      <p>Delta Lake + Spark = the <strong>Lakehouse</strong> pattern. You get the cheap storage of a data lake (S3/HDFS) combined with the reliability and query performance of a data warehouse. This is how Databricks, Snowflake (on Iceberg), and most modern data platforms are built. If you're working with Spark in 2024, you're almost certainly working with Delta Lake or its alternatives (Apache Iceberg, Apache Hudi).</p>
+    </div>
+  </div>
+</article>
+
+
+<!-- ======= CHAPTER 8: UDFs ======= -->
+<article class="chapter" id="udfs">
+  <div class="ch-label">Chapter 08 — Custom Logic in Spark</div>
+  <h2>UDFs — <em>When Built-In Functions Aren't Enough</em></h2>
+  <p class="ch-lead">Spark has hundreds of built-in functions. But sometimes your business logic is too custom for them. User Defined Functions (UDFs) let you write arbitrary Python/Scala code and run it inside Spark. But they come with a hidden cost most people don't know about.</p>
+
+  <div class="prose">
+    <h3>Python UDFs — Convenient but Slow</h3>
+
+    <p>Here's something most tutorials don't tell you: a Python UDF in PySpark is <strong>dramatically slower</strong> than the equivalent built-in function. Here's why.</p>
+
+    <p>Spark is written in Scala/Java. It runs on the JVM. When you write a Python UDF, for every single row that goes through that UDF, Spark must: serialize the data from JVM binary format to Python-readable format, send it to a Python worker process via a socket, execute your Python function, serialize the result back to JVM format, and send it back. This is called the <strong>serialization overhead</strong>, and it destroys performance.</p>
+
+    <div class="compare">
+      <div class="cb bad">
+        <span class="cb-label">SLOW — Python UDF</span>
+        <div class="cb-title">~10–100× Slower</div>
+        <p>For every row: JVM → serialize → Python socket → deserialize → your function → serialize → socket → JVM → deserialize. Bypasses Catalyst optimization and Tungsten. Breaks the entire optimized pipeline.</p>
+      </div>
+      <div class="cb good">
+        <span class="cb-label">FAST — Built-in Functions</span>
+        <div class="cb-title">~100× Faster</div>
+        <p>Built-in functions (from <code>pyspark.sql.functions</code>) execute natively on the JVM. Catalyst can optimize them. Tungsten can compile them. No serialization. No Python process. Pure JVM speed.</p>
+      </div>
+    </div>
+
+    <h3>The Golden Rule of UDFs</h3>
+
+    <div class="warn">
+      <span class="warn-tag">⚠ ALWAYS PREFER BUILT-IN FUNCTIONS</span>
+      <p>Before writing a UDF, spend 10 minutes checking <code>pyspark.sql.functions</code>. Spark has <strong>hundreds</strong> of built-ins: string manipulation, date arithmetic, JSON parsing, array operations, math functions, window functions, and more. If a built-in exists, use it. UDFs should be a last resort for genuinely custom logic that has no built-in equivalent.</p>
+    </div>
+
+    <div class="code" data-lang="PYSPARK">
+<span class="cm"># BAD: Python UDF — slow, breaks optimization, bypasses Tungsten</span>
+<span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> udf
+<span class="kw">from</span> pyspark.sql.types <span class="kw">import</span> StringType
+
+<span class="op">@</span><span class="fn">udf</span>(returnType=StringType())
+<span class="kw">def</span> <span class="fn">categorize</span>(amount):
+    <span class="kw">if</span> amount > <span class="num">1000</span>: <span class="kw">return</span> <span class="str">"high"</span>
+    <span class="kw">elif</span> amount > <span class="num">100</span>: <span class="kw">return</span> <span class="str">"medium"</span>
+    <span class="kw">else</span>: <span class="kw">return</span> <span class="str">"low"</span>
+
+df.<span class="fn">withColumn</span>(<span class="str">"tier"</span>, <span class="fn">categorize</span>(df.amount))  <span class="cm"># Slow!</span>
+
+<span class="cm"># GOOD: Use built-in `when/otherwise` — same logic, 100x faster</span>
+<span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> when
+
+df.<span class="fn">withColumn</span>(<span class="str">"tier"</span>,
+    <span class="fn">when</span>(df.amount > <span class="num">1000</span>, <span class="str">"high"</span>)
+    .<span class="fn">when</span>(df.amount > <span class="num">100</span>,  <span class="str">"medium"</span>)
+    .<span class="fn">otherwise</span>(<span class="str">"low"</span>)
+)  <span class="cm"># Fast! JVM-native. Catalyst-optimized.</span>
+    </div>
+
+    <h3>When You Must Write a UDF — Use Pandas UDFs (Vectorized)</h3>
+
+    <p>If your logic is truly custom and has no built-in equivalent, use a <strong>Pandas UDF</strong> (also called Vectorized UDF). Instead of calling your Python function row-by-row (worst case), it calls it on batches of rows as Pandas Series. Apache Arrow is used for zero-copy serialization between JVM and Python.</p>
+
+    <div class="code" data-lang="PYSPARK — PANDAS UDF">
+<span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> pandas_udf
+<span class="kw">from</span> pyspark.sql.types <span class="kw">import</span> DoubleType
+
+<span class="cm"># Pandas UDF — operates on entire column at once (vectorized)</span>
+<span class="op">@</span><span class="fn">pandas_udf</span>(DoubleType())
+<span class="kw">def</span> <span class="fn">apply_complex_model</span>(amounts: pd.Series) -> pd.Series:
+    <span class="cm"># 'amounts' is a Pandas Series — not a single value!</span>
+    <span class="cm"># You can use numpy, scipy, scikit-learn — any Python library here</span>
+    <span class="kw">import</span> numpy <span class="kw">as</span> np
+    <span class="kw">return</span> np.<span class="fn">log1p</span>(amounts) * <span class="num">0.95</span>  <span class="cm"># vectorized numpy operation</span>
+
+df.<span class="fn">withColumn</span>(<span class="str">"log_amount"</span>, <span class="fn">apply_complex_model</span>(df.amount))
+<span class="cm"># ~10× faster than regular Python UDF because:</span>
+<span class="cm"># - Data transferred in batches (Arrow columnar format)</span>
+<span class="cm"># - No per-row Python overhead</span>
+<span class="cm"># - Can use vectorized numpy/pandas operations</span>
+    </div>
+  </div>
+</article>
+
+
+<!-- ======= CHAPTER 9: SPARK UI ======= -->
+<article class="chapter" id="sparkui">
+  <div class="ch-label">Chapter 09 — Reading the Machine's Mind</div>
+  <h2>Spark UI — <em>Diagnosing What's Actually Happening</em></h2>
+  <p class="ch-lead">The Spark UI (available at port 4040 while a job runs) is like an X-ray of your running job. Knowing how to read it is the difference between guessing why a job is slow and actually knowing. Most engineers ignore it — don't be one of them.</p>
+
+  <div class="prose">
+    <h3>The Jobs Tab</h3>
+
+    <p>Each action you trigger creates one <strong>Job</strong>. The Jobs tab shows all jobs: pending, running, succeeded, failed. Click a job to see its Stages. The key metric: <strong>Duration</strong>. If one job takes 2 hours but another takes 2 seconds, you know where to focus.</p>
+
+    <h3>The Stages Tab — Where You Spend Most Time Debugging</h3>
+
+    <p>Each Stage shows its Tasks as a timeline and distribution. This is where you diagnose problems:</p>
+
+    <div class="timeline">
+      <div class="tl-item">
+        <h4>Look at Task Duration Distribution</h4>
+        <p>If most tasks complete in 5 seconds but a few take 10 minutes — that's <strong>data skew</strong>. The long-running tasks are processing oversized partitions. Go fix with salting or AQE.</p>
+      </div>
+      <div class="tl-item">
+        <h4>Look at "Shuffle Read" and "Shuffle Write" Bytes</h4>
+        <p>If a stage shows 500GB of shuffle write followed by 500GB of shuffle read — you have a massive, expensive shuffle. Can you reduce it with a broadcast join, pre-aggregation, or repartitioning by key?</p>
+      </div>
+      <div class="tl-item">
+        <h4>Look at "Spill (Disk)" Column</h4>
+        <p>Non-zero disk spill means tasks ran out of execution memory and had to write to disk. Your partitions are too large for available memory. Increase executor memory or increase partition count (smaller partitions = less memory per task).</p>
+      </div>
+      <div class="tl-item">
+        <h4>Look at "GC Time" in Task Metrics</h4>
+        <p>If GC time is more than 10–20% of task time, your Executors are spending significant time on garbage collection. Increase heap size, use off-heap storage, or reduce data object creation in UDFs.</p>
+      </div>
+      <div class="tl-item">
+        <h4>Look at "Task Deserialization Time"</h4>
+        <p>High deserialization time usually points to Python UDFs (row-by-row serialization overhead) or large broadcast variables being deserialized repeatedly. Switch to Pandas UDFs or refactor your broadcast usage.</p>
+      </div>
+    </div>
+
+    <h3>The SQL Tab — For DataFrame/SQL Jobs</h3>
+
+    <p>Click on a SQL query to see a visual <strong>DAG diagram</strong> of the execution plan — each node shows the operation and its statistics (rows processed, data size, time). This visual representation is far easier to read than <code>explain()</code> output. Look for:</p>
+
+    <ul class="cklist">
+      <li><span class="ci">🔴</span><div><strong>Large "Exchange" nodes:</strong> These are shuffles. The size next to them is how much data was shuffled. Reduce these.</div></li>
+      <li><span class="ci">🟡</span><div><strong>Join strategy labels:</strong> "BroadcastHashJoin" = fast. "SortMergeJoin" = expensive shuffle. If you expected a broadcast join but see SortMergeJoin, your table might be bigger than the broadcast threshold.</div></li>
+      <li><span class="ci">🟢</span><div><strong>"Filter" nodes early in the plan:</strong> Means predicate pushdown is working. Good.</div></li>
+      <li><span class="ci">🔵</span><div><strong>"WholeStageCodegen" wrappers:</strong> Multiple operators grouped inside one codegen block = Tungsten is optimizing them. Good sign.</div></li>
+    </ul>
+
+    <h3>The Environment Tab</h3>
+    <p>Shows all Spark configuration values active in your session. Useful to verify your tuning changes actually took effect — check that your custom <code>spark.conf.set()</code> values appear here.</p>
+
+    <h3>The Executors Tab</h3>
+    <p>Shows every Executor: how much memory is used vs available, GC time, tasks completed, shuffle read/write. If one Executor has dramatically more work than others — check for partitioning imbalance or skew.</p>
+
+    <div class="tip">
+      <span class="tip-tag">💡 SPARK HISTORY SERVER</span>
+      <p>While a job runs, the UI is at port 4040. After it finishes, the UI disappears — unless you have Spark History Server running. In production, <strong>always set up History Server</strong>. It persists the UI for all completed jobs to a persistent storage location, allowing post-mortem analysis. Configure with: <code>spark.eventLog.enabled=true</code> and <code>spark.eventLog.dir=hdfs://path/to/logs</code>.</p>
+    </div>
+  </div>
+</article>
+
+
+<!-- ======= CHAPTER 10: REAL-WORLD PATTERNS ======= -->
+<article class="chapter" id="patterns">
+  <div class="ch-label">Chapter 10 — Production Wisdom</div>
+  <h2>Real-World <em>Patterns</em> That Actually Matter</h2>
+  <p class="ch-lead">Everything so far is theory. Here are the patterns, anti-patterns, and hard-won lessons from running Spark in production at scale. These are the things they don't teach in tutorials.</p>
+
+  <div class="prose">
+    <h3>Pattern 1: The ETL Pipeline (Extract, Transform, Load)</h3>
+
+    <p>The most common Spark job: read raw data from a source, clean and transform it, write to a destination. The key insight: <strong>structure your transformations as a pipeline</strong>, not as ad-hoc code.</p>
+
+    <div class="code" data-lang="PYSPARK — PRODUCTION ETL PATTERN">
+<span class="kw">def</span> <span class="fn">run_pipeline</span>(spark, date):
+    <span class="cm"># 1. READ — specify schema explicitly (never infer schema in production)</span>
+    schema = <span class="cls">StructType</span>([
+        <span class="cls">StructField</span>(<span class="str">"order_id"</span>, <span class="cls">LongType</span>()),
+        <span class="cls">StructField</span>(<span class="str">"amount"</span>, <span class="cls">DoubleType</span>()),
+        <span class="cls">StructField</span>(<span class="str">"country"</span>, <span class="cls">StringType</span>()),
+        <span class="cls">StructField</span>(<span class="str">"ts"</span>, <span class="cls">TimestampType</span>()),
+    ])
+    raw = spark.read.<span class="fn">schema</span>(schema).<span class="fn">parquet</span>(<span class="str">f"s3://raw/orders/dt={date}/"</span>)
+
+    <span class="cm"># 2. VALIDATE — fail fast on bad data</span>
+    null_count = raw.<span class="fn">filter</span>(raw.order_id.<span class="fn">isNull</span>()).<span class="fn">count</span>()
+    <span class="kw">if</span> null_count > <span class="num">0</span>:
+        <span class="kw">raise</span> ValueError(<span class="str">f"{null_count} rows with null order_id. Aborting."</span>)
+
+    <span class="cm"># 3. TRANSFORM — chain all transformations</span>
+    transformed = (
+        raw
+        .<span class="fn">filter</span>(raw.amount > <span class="num">0</span>)                          <span class="cm"># remove invalid</span>
+        .<span class="fn">withColumn</span>(<span class="str">"date"</span>, <span class="fn">to_date</span>(raw.ts))              <span class="cm"># extract date</span>
+        .<span class="fn">withColumn</span>(<span class="str">"tier"</span>,
+            <span class="fn">when</span>(raw.amount > <span class="num">1000</span>, <span class="str">"high"</span>).<span class="fn">otherwise</span>(<span class="str">"standard"</span>))
+        .<span class="fn">drop</span>(<span class="str">"ts"</span>)                                         <span class="cm"># remove raw field</span>
+        .<span class="fn">dropDuplicates</span>([<span class="str">"order_id"</span>])                       <span class="cm"># deduplicate</span>
+        .<span class="fn">repartition</span>(<span class="num">200</span>, <span class="str">"country"</span>)                       <span class="cm"># optimize for downstream</span>
+    )
+
+    <span class="cm"># 4. WRITE — partition by date for efficient future reads</span>
+    transformed.<span class="fn">write</span> \
+        .<span class="fn">format</span>(<span class="str">"delta"</span>) \
+        .<span class="fn">mode</span>(<span class="str">"overwrite"</span>) \
+        .<span class="fn">option</span>(<span class="str">"replaceWhere"</span>, <span class="str">f"date = '{date}'"</span>) \
+        .<span class="fn">partitionBy</span>(<span class="str">"date"</span>) \
+        .<span class="fn">save</span>(<span class="str">"s3://curated/orders/"</span>)
+    </div>
+
+    <h3>Pattern 2: The Lambda Architecture (Batch + Stream)</h3>
+
+    <p>Many production systems run two parallel pipelines: a <strong>batch pipeline</strong> that runs daily/hourly and produces accurate historical results, and a <strong>streaming pipeline</strong> that produces approximate real-time results. Queries combine both: "show me today's real-time numbers plus historical baseline."</p>
+
+    <p>With Delta Lake's MERGE capability, you can even have the batch pipeline periodically correct the streaming pipeline's results — giving you accurate results with low latency. This is called the <strong>Kappa architecture</strong> in its modern form.</p>
+
+    <h3>Pattern 3: Broadcast Everything Small</h3>
+
+    <p>Any lookup table under ~100MB (configurable) should be broadcast. This includes: dimension tables (products, categories, users), config tables, ML model parameters for inference, and mapping files. Broadcast once per Executor at job start, then all joins happen at local memory speed.</p>
+
+    <h3>Pattern 4: Cache Strategically, Not Reflexively</h3>
+
+    <p>Caching is not free — it uses storage memory, which could otherwise be used for execution. The rule: cache a DataFrame only if it will be used <strong>more than once</strong> in your program. For linear pipelines (read → transform → write), caching gives zero benefit and wastes memory.</p>
+
+    <div class="code" data-lang="PYSPARK — SMART CACHING">
+<span class="cm"># When to cache: DataFrame used multiple times</span>
+filtered = raw.<span class="fn">filter</span>(raw.country == <span class="str">"India"</span>).<span class="fn">cache</span>()
+count = filtered.<span class="fn">count</span>()          <span class="cm"># first use — triggers caching</span>
+avg   = filtered.<span class="fn">agg</span>({<span class="str">"amount"</span>: <span class="str">"avg"</span>}).<span class="fn">collect</span>()  <span class="cm"># second use — from cache</span>
+top   = filtered.<span class="fn">orderBy</span>(<span class="str">"amount"</span>, ascending=<span class="kw">False</span>).<span class="fn">limit</span>(<span class="num">10</span>).<span class="fn">show</span>()  <span class="cm"># third use</span>
+filtered.<span class="fn">unpersist</span>()  <span class="cm"># ← ALWAYS unpersist when done. Free the memory.</span>
+
+<span class="cm"># When NOT to cache: linear single-use pipeline</span>
+spark.read.<span class="fn">parquet</span>(<span class="str">"s3://..."</span>) \
+     .<span class="fn">filter</span>(...) \
+     .<span class="fn">groupBy</span>(...) \
+     .<span class="fn">agg</span>(...) \
+     .<span class="fn">write</span>.<span class="fn">save</span>(...)  <span class="cm"># No cache needed — each step used exactly once</span>
+    </div>
+
+    <h3>Pattern 5: Partitioned Storage for Fast Reads</h3>
+
+    <p>When writing data that will be filtered by a specific column (date, country, region), <strong>partition your output by that column</strong>. This creates a directory structure like <code>date=2024-01-01/part-*.parquet</code>. When future queries filter by date, Spark reads only the matching directories — skipping everything else entirely (partition pruning).</p>
+
+    <div class="story">
+      <span class="story-tag">📂 Partition Pruning in Action</span>
+      <p>You have 1TB of order data written with <code>.partitionBy("date")</code>. The data lives in 365 directories, one per day. When someone queries <code>WHERE date = '2024-06-15'</code>, Spark only reads that one directory — maybe 3GB. It skips 997GB entirely without even opening those files.</p>
+      <p>Without partitioning: Spark reads all 1TB and filters in memory. With partitioning: Spark reads 3GB. A 333× speedup from one simple choice at write time. This is one of the highest-leverage optimizations in all of Spark.</p>
+    </div>
+  </div>
+</article>
+
+
+<!-- ======= CHAPTER 11: CONFIG CHEATSHEET ======= -->
+<article class="chapter" id="config">
+  <div class="ch-label">Chapter 11 — The Tuning Reference</div>
+  <h2>Configuration <em>Cheatsheet</em> — The Settings That Matter</h2>
+  <p class="ch-lead">Spark has hundreds of configuration settings. Most you'll never touch. These are the ones that actually make a difference in production — what they do, and when to change them.</p>
+
+  <div class="prose">
+
+    <div class="code" data-lang="SPARK CONFIG — THE ONES THAT MATTER">
+<span class="cm">## ---- EXECUTION ---- </span>
+
+<span class="cm"># Number of partitions created by shuffle operations (groupBy, join, etc.)</span>
+<span class="cm"># Default 200. Too small for large data, too large for small data.</span>
+<span class="cm"># Rule: 2-4× your total CPU core count, targeting 100-200MB per partition</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.sql.shuffle.partitions"</span>, <span class="str">"400"</span>)
+
+<span class="cm"># Max size for auto-broadcasting a table in joins</span>
+<span class="cm"># Default: 10MB. Increase if your dimension tables are larger.</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.sql.autoBroadcastJoinThreshold"</span>, <span class="num">104857600</span>)  <span class="cm"># 100MB</span>
+
+<span class="cm"># Enable Adaptive Query Execution (auto-optimize at runtime)</span>
+<span class="cm"># Default ON in Spark 3.2+. Fixes skew, coalesces partitions, chooses join strategy.</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.sql.adaptive.enabled"</span>, <span class="str">"true"</span>)
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.sql.adaptive.skewJoin.enabled"</span>, <span class="str">"true"</span>)
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.sql.adaptive.coalescePartitions.enabled"</span>, <span class="str">"true"</span>)
+
+<span class="cm">## ---- MEMORY ----</span>
+
+<span class="cm"># Fraction of executor memory used for execution + storage (unified pool)</span>
+<span class="cm"># Default 0.6 (60%). Increase if getting OOM during shuffles/sorts.</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.memory.fraction"</span>, <span class="str">"0.7"</span>)
+
+<span class="cm"># Within the unified memory, fraction reserved for storage (caching)</span>
+<span class="cm"># Default 0.5 (50% of unified memory). Reduce if you cache nothing.</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.memory.storageFraction"</span>, <span class="str">"0.3"</span>)
+
+<span class="cm">## ---- I/O & FILES ----</span>
+
+<span class="cm"># Max bytes per input partition when reading files</span>
+<span class="cm"># Default 128MB (matching HDFS block size)</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.sql.files.maxPartitionBytes"</span>, <span class="str">"268435456"</span>)  <span class="cm"># 256MB</span>
+
+<span class="cm"># How aggressively to merge small files into one partition at read time</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.sql.files.openCostInBytes"</span>, <span class="str">"8388608"</span>)  <span class="cm"># 8MB</span>
+
+<span class="cm">## ---- SERIALIZATION ----</span>
+
+<span class="cm"># Use Kryo serializer instead of Java default (2-10x smaller, faster)</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.serializer"</span>, <span class="str">"org.apache.spark.serializer.KryoSerializer"</span>)
+
+<span class="cm">## ---- SPECULATION ----</span>
+
+<span class="cm"># Run duplicate copies of slow tasks on other nodes (handles stragglers)</span>
+<span class="cm"># Useful when network/hardware causes random slow tasks</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.speculation"</span>, <span class="str">"true"</span>)
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.speculation.multiplier"</span>, <span class="str">"3"</span>)  <span class="cm"># 3× median = speculate</span>
+
+<span class="cm">## ---- HISTORY SERVER (for post-job debugging) ----</span>
+<span class="cm"># spark.eventLog.enabled=true</span>
+<span class="cm"># spark.eventLog.dir=hdfs://namenode/spark-logs</span>
+    </div>
+
+    <h3>The 5-Step Performance Checklist</h3>
+    <p>When a Spark job is slow, go through these in order. Each step rules out one major class of problem.</p>
+
+    <div class="flow">
+      <div class="flow-row">
+        <div class="fstep">
+          <div class="fstep-num">01</div>
+          <div class="fstep-body">
+            <strong>Check for Data Skew in Spark UI → Stages tab</strong>
+            <span>Are task durations wildly uneven within a stage? One 30-min task while 999 tasks took 5s? → Skew. Fix: salting, broadcast join, or enable AQE skew handling.</span>
+          </div>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="fstep">
+          <div class="fstep-num">02</div>
+          <div class="fstep-body">
+            <strong>Check Partition Count with df.rdd.getNumPartitions()</strong>
+            <span>Too few? → idle cores. Too many? → overhead. Target 100–200MB per partition and 2–4× total cluster cores. Fix: repartition() or coalesce().</span>
+          </div>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="fstep">
+          <div class="fstep-num">03</div>
+          <div class="fstep-body">
+            <strong>Check explain() for Bad Join Strategies</strong>
+            <span>See SortMergeJoin where you expected BroadcastHashJoin? Increase autoBroadcastJoinThreshold or use broadcast() hint. Any unexpected shuffles? Find and eliminate them.</span>
+          </div>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="fstep">
+          <div class="fstep-num">04</div>
+          <div class="fstep-body">
+            <strong>Check for Disk Spill in Spark UI → Stages → Task Metrics</strong>
+            <span>Non-zero "Spill (Disk)" means OOM pressure. Fix: increase executor memory, or increase partition count (smaller partitions = less memory per task).</span>
+          </div>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="fstep">
+          <div class="fstep-num">05</div>
+          <div class="fstep-body">
+            <strong>Check for Python UDFs and replace with built-ins</strong>
+            <span>Any Python UDFs in your code? Replace with pyspark.sql.functions equivalents. Can't avoid? Use Pandas UDF instead of row-by-row UDF. Huge performance difference.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip">
+      <span class="tip-tag">🎓 WHAT TO LEARN NEXT</span>
+      <p>You now have a deep understanding of Spark's core, internals, and production patterns. The natural next steps are: <strong>Delta Lake internals</strong> (transaction log, compaction, Z-order in depth), <strong>Spark on Kubernetes</strong> (dynamic allocation, pod templates, auto-scaling), <strong>Spark + Databricks</strong> (Photon engine, Unity Catalog, Delta Live Tables), and <strong>Apache Iceberg/Hudi</strong> (alternative table formats with different tradeoffs). Each of these builds directly on everything you now know.</p>
+    </div>
+  </div>
+</article>
+
+<footer class="footer">
+  <h3>Spark Part II</h3>
+  <p>OPTIMIZATION · INTERNALS · STREAMING · DELTA LAKE · PRODUCTION PATTERNS</p>
+</footer>
+
+</body>
+</html>

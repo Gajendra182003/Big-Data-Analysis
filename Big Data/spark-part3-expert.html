@@ -1,0 +1,2123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spark Part III — Expert Level</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700&family=Inconsolata:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+
+:root{
+  --cream:  #F5F0E8;
+  --cream2: #EDE7D9;
+  --cream3: #E3DBCA;
+  --cream4: #D8CEB8;
+  --forest: #1E3A2F;
+  --forest2:#2A5040;
+  --forest3:#366B54;
+  --moss:   #4A7C59;
+  --sage:   #7BA68A;
+  --terra:  #C15B3A;
+  --terra2: #D96B46;
+  --terra3: #E8876A;
+  --gold:   #C9922A;
+  --gold2:  #E0AA40;
+  --ink:    #1A1208;
+  --ink2:   #2E220E;
+  --ink3:   #5C4A30;
+  --muted:  #9A8870;
+  --border: #D0C4A8;
+  --border2:#BFB094;
+  --white:  #FDFAF4;
+  --shadow: rgba(30,58,47,0.10);
+}
+
+body{
+  background:var(--cream);
+  color:var(--ink2);
+  font-family:'Outfit',sans-serif;
+  font-size:17px;
+  line-height:1.85;
+  overflow-x:hidden;
+}
+
+/* ======= HERO ======= */
+.hero{
+  background:var(--forest);
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  overflow:hidden;
+  padding:80px 40px;
+}
+
+/* Animated botanical pattern */
+.hero-pattern{
+  position:absolute;
+  inset:0;
+  opacity:0.07;
+  background-image: radial-gradient(circle at 20% 80%, var(--sage) 1px, transparent 1px),
+                    radial-gradient(circle at 80% 20%, var(--sage) 1px, transparent 1px),
+                    radial-gradient(circle at 50% 50%, var(--gold2) 1px, transparent 1px);
+  background-size: 60px 60px, 80px 80px, 40px 40px;
+  animation: patternDrift 30s linear infinite;
+}
+@keyframes patternDrift{
+  from{background-position:0 0, 0 0, 0 0;}
+  to{background-position:60px 60px, -80px 80px, 40px -40px;}
+}
+
+.hero-ring{
+  position:absolute;
+  border-radius:50%;
+  border:1px solid rgba(122,166,138,0.15);
+  animation:ringPulse 4s ease-in-out infinite;
+}
+@keyframes ringPulse{
+  0%,100%{transform:translate(-50%,-50%) scale(1);opacity:0.3;}
+  50%{transform:translate(-50%,-50%) scale(1.05);opacity:0.6;}
+}
+
+.hero-content{
+  position:relative;
+  z-index:1;
+  max-width:900px;
+}
+
+.hero-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  background:rgba(201,146,42,0.15);
+  border:1px solid rgba(201,146,42,0.3);
+  border-radius:100px;
+  padding:8px 20px;
+  font-family:'Inconsolata',monospace;
+  font-size:11px;
+  letter-spacing:0.35em;
+  color:var(--gold2);
+  text-transform:uppercase;
+  margin-bottom:36px;
+}
+
+.hero h1{
+  font-family:'Libre Baskerville',serif;
+  font-size:clamp(48px,10vw,108px);
+  font-weight:700;
+  color:var(--cream);
+  line-height:0.92;
+  margin-bottom:20px;
+}
+
+.hero h1 .italic{
+  font-style:italic;
+  color:var(--terra3);
+}
+
+.hero h1 .small{
+  font-size:0.45em;
+  font-weight:400;
+  color:var(--sage);
+  font-style:normal;
+  display:block;
+  letter-spacing:0.05em;
+  margin-top:8px;
+}
+
+.hero-rule{
+  width:100px;
+  height:2px;
+  background:linear-gradient(90deg,var(--terra),var(--gold2));
+  margin:36px 0;
+}
+
+.hero-desc{
+  font-size:18px;
+  color:var(--sage);
+  max-width:640px;
+  line-height:1.8;
+  font-weight:300;
+}
+.hero-desc strong{color:var(--cream2);}
+
+.hero-topics{
+  margin-top:52px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  gap:10px;
+}
+
+.ht-item{
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(122,166,138,0.2);
+  border-radius:8px;
+  padding:12px 16px;
+  font-size:13px;
+  color:var(--sage);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  transition:all 0.2s;
+}
+.ht-item:hover{background:rgba(255,255,255,0.08);border-color:rgba(122,166,138,0.4);}
+.ht-num{
+  font-family:'Inconsolata',monospace;
+  font-size:10px;
+  color:var(--terra3);
+  letter-spacing:0.1em;
+}
+
+/* ======= NAV ======= */
+.nav{
+  position:sticky;
+  top:0;
+  background:rgba(245,240,232,0.97);
+  backdrop-filter:blur(10px);
+  border-bottom:2px solid var(--border);
+  z-index:200;
+  padding:0 24px;
+  display:flex;
+  overflow-x:auto;
+  gap:0;
+}
+
+.nav a{
+  font-family:'Inconsolata',monospace;
+  font-size:11px;
+  letter-spacing:0.12em;
+  color:var(--muted);
+  text-decoration:none;
+  padding:14px 16px;
+  white-space:nowrap;
+  border-bottom:3px solid transparent;
+  transition:all 0.2s;
+}
+.nav a:hover{color:var(--terra);border-bottom-color:var(--terra);}
+
+/* ======= CHAPTERS ======= */
+.chapter{
+  max-width:800px;
+  margin:0 auto;
+  padding:80px 32px;
+  border-bottom:1px solid var(--border);
+}
+
+.ch-label{
+  font-family:'Inconsolata',monospace;
+  font-size:10px;
+  letter-spacing:0.45em;
+  color:var(--terra);
+  text-transform:uppercase;
+  margin-bottom:14px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+.ch-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+.chapter h2{
+  font-family:'Libre Baskerville',serif;
+  font-size:clamp(28px,5vw,52px);
+  font-weight:700;
+  color:var(--forest);
+  line-height:1.05;
+  margin-bottom:20px;
+}
+.chapter h2 em{font-style:italic;color:var(--terra);}
+.chapter h2 .g{color:var(--moss);}
+.chapter h2 .gd{color:var(--gold);}
+
+.ch-lead{
+  font-size:19px;
+  color:var(--ink3);
+  border-left:4px solid var(--forest3);
+  padding-left:20px;
+  line-height:1.65;
+  margin-bottom:0;
+  font-weight:400;
+  font-style:italic;
+}
+
+/* ======= PROSE ======= */
+.prose p{
+  color:var(--ink3);
+  margin-bottom:22px;
+  font-size:17px;
+  line-height:1.85;
+}
+.prose p strong{color:var(--ink);font-weight:600;}
+.prose p code{
+  font-family:'Inconsolata',monospace;
+  font-size:14px;
+  background:var(--cream3);
+  border:1px solid var(--border);
+  padding:2px 8px;
+  border-radius:4px;
+  color:var(--forest2);
+}
+
+.prose h3{
+  font-family:'Libre Baskerville',serif;
+  font-size:26px;
+  font-weight:700;
+  color:var(--forest);
+  margin:52px 0 18px;
+  padding-bottom:10px;
+  border-bottom:1px solid var(--border);
+}
+
+.prose h4{
+  font-family:'Inconsolata',monospace;
+  font-size:11px;
+  letter-spacing:0.3em;
+  text-transform:uppercase;
+  color:var(--terra);
+  margin:36px 0 14px;
+}
+
+/* ======= STORY BOX ======= */
+.story{
+  background:var(--forest);
+  color:var(--cream);
+  border-radius:12px;
+  padding:36px;
+  margin:36px 0;
+  position:relative;
+  overflow:hidden;
+}
+
+.story::after{
+  content:'';
+  position:absolute;
+  bottom:-20px;right:-20px;
+  width:160px;height:160px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(193,91,58,0.15),transparent 70%);
+  pointer-events:none;
+}
+
+.story-tag{
+  font-family:'Inconsolata',monospace;
+  font-size:10px;
+  letter-spacing:0.35em;
+  color:var(--terra3);
+  margin-bottom:16px;
+  display:block;
+  text-transform:uppercase;
+}
+
+.story p{
+  color:#B8C8C0;
+  font-size:16px;
+  line-height:1.82;
+  margin-bottom:14px;
+  position:relative;
+  z-index:1;
+}
+.story p:last-child{margin:0;}
+.story p strong{color:var(--cream);}
+
+/* ======= WARN / TIP / HL ======= */
+.warn{
+  background:rgba(193,91,58,0.07);
+  border:1px solid rgba(193,91,58,0.3);
+  border-radius:10px;
+  padding:24px 28px;
+  margin:28px 0;
+}
+.warn-tag{
+  font-family:'Inconsolata',monospace;
+  font-size:10px;
+  letter-spacing:0.3em;
+  color:var(--terra);
+  margin-bottom:10px;
+  display:block;
+  text-transform:uppercase;
+}
+.warn p{color:var(--ink3);font-size:15px;margin:0;line-height:1.7;}
+.warn p strong{color:var(--terra);}
+
+.tip{
+  background:rgba(30,58,47,0.06);
+  border:1px solid rgba(30,58,47,0.2);
+  border-radius:10px;
+  padding:24px 28px;
+  margin:28px 0;
+}
+.tip-tag{
+  font-family:'Inconsolata',monospace;
+  font-size:10px;
+  letter-spacing:0.3em;
+  color:var(--forest3);
+  margin-bottom:10px;
+  display:block;
+  text-transform:uppercase;
+}
+.tip p{color:var(--ink3);font-size:15px;margin:0;line-height:1.7;}
+.tip p strong{color:var(--forest2);}
+
+.hl{
+  background:rgba(201,146,42,0.07);
+  border:1px solid rgba(201,146,42,0.25);
+  border-radius:10px;
+  padding:22px 26px;
+  margin:24px 0;
+}
+.hl p{color:var(--ink3);font-size:15px;margin:0;line-height:1.7;}
+.hl p strong{color:var(--gold);}
+
+/* ======= CODE ======= */
+.code{
+  background:var(--forest);
+  border-radius:10px;
+  padding:28px;
+  margin:24px 0;
+  font-family:'Inconsolata',monospace;
+  font-size:13px;
+  line-height:1.85;
+  color:var(--sage);
+  overflow-x:auto;
+  position:relative;
+  border:1px solid var(--forest2);
+}
+.code::before{
+  content:attr(data-lang);
+  position:absolute;
+  top:12px;right:16px;
+  font-size:9px;
+  letter-spacing:0.3em;
+  color:rgba(122,166,138,0.4);
+  text-transform:uppercase;
+}
+.code .kw {color:#E8876A;}
+.code .fn {color:#E0AA40;}
+.code .str{color:#7BA68A;}
+.code .cm {color:#3A5040;font-style:italic;}
+.code .num{color:#C9922A;}
+.code .cls{color:#D4A0C0;}
+.code .op {color:#D96B46;}
+
+/* ======= FLOW ======= */
+.flow{
+  background:var(--cream2);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:32px;
+  margin:32px 0;
+}
+
+.flow-title{
+  font-family:'Inconsolata',monospace;
+  font-size:10px;
+  letter-spacing:0.35em;
+  color:var(--muted);
+  text-align:center;
+  margin-bottom:28px;
+  text-transform:uppercase;
+}
+
+.fstep{
+  display:flex;
+  align-items:flex-start;
+  gap:18px;
+  padding:16px 18px;
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:8px;
+  margin-bottom:4px;
+  transition:all 0.2s;
+  cursor:default;
+}
+.fstep:hover{border-color:var(--forest3);transform:translateX(4px);box-shadow:2px 0 0 var(--forest3);}
+
+.fstep-num{
+  font-family:'Inconsolata',monospace;
+  font-size:11px;
+  color:var(--terra);
+  background:rgba(193,91,58,0.08);
+  padding:4px 10px;
+  border-radius:4px;
+  flex-shrink:0;
+  margin-top:2px;
+  min-width:44px;
+  text-align:center;
+  border:1px solid rgba(193,91,58,0.2);
+}
+
+.fstep-body strong{
+  font-size:15px;
+  font-weight:600;
+  color:var(--forest);
+  display:block;
+  margin-bottom:5px;
+}
+.fstep-body span{font-size:14px;color:var(--ink3);line-height:1.65;}
+
+.flow-arrow{text-align:center;color:var(--border2);font-size:16px;padding:2px;opacity:0.7;}
+
+/* ======= COMPARE ======= */
+.compare{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin:28px 0;
+}
+@media(max-width:600px){.compare{grid-template-columns:1fr;}}
+
+.cb{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:24px;
+  transition:all 0.2s;
+}
+.cb:hover{transform:translateY(-3px);box-shadow:0 8px 24px var(--shadow);}
+
+.cb.good{border-color:rgba(30,58,47,0.4);background:rgba(30,58,47,0.04);}
+.cb.bad {border-color:rgba(193,91,58,0.35);background:rgba(193,91,58,0.04);}
+.cb.a   {border-color:rgba(74,124,89,0.4);}
+.cb.b   {border-color:rgba(201,146,42,0.35);}
+
+.cb-label{
+  font-family:'Inconsolata',monospace;
+  font-size:10px;
+  letter-spacing:0.25em;
+  margin-bottom:12px;
+  display:block;
+  text-transform:uppercase;
+}
+.cb.good .cb-label{color:var(--forest3);}
+.cb.bad  .cb-label{color:var(--terra);}
+.cb.a    .cb-label{color:var(--moss);}
+.cb.b    .cb-label{color:var(--gold);}
+
+.cb-title{
+  font-family:'Libre Baskerville',serif;
+  font-size:18px;
+  font-weight:700;
+  margin-bottom:12px;
+}
+.cb.good .cb-title{color:var(--forest);}
+.cb.bad  .cb-title{color:var(--terra);}
+.cb.a    .cb-title{color:var(--forest2);}
+.cb.b    .cb-title{color:var(--gold);}
+
+.cb p{font-size:14px;color:var(--ink3);line-height:1.7;margin:0;}
+.cb p strong{color:var(--ink);}
+
+/* ======= TABLE ======= */
+.tbl{
+  width:100%;
+  border-collapse:collapse;
+  margin:24px 0;
+  font-size:14px;
+}
+.tbl th{
+  font-family:'Inconsolata',monospace;
+  font-size:9px;
+  letter-spacing:0.25em;
+  text-transform:uppercase;
+  color:var(--muted);
+  padding:12px 16px;
+  text-align:left;
+  background:var(--cream2);
+  border-bottom:2px solid var(--border);
+}
+.tbl td{
+  padding:13px 16px;
+  border-bottom:1px solid var(--cream3);
+  color:var(--ink3);
+  vertical-align:top;
+  line-height:1.6;
+}
+.tbl td strong{color:var(--ink);font-weight:600;}
+.tbl tr:hover td{background:var(--cream2);}
+
+/* ======= CHECKLIST ======= */
+.cklist{list-style:none;margin:20px 0;}
+.cklist li{
+  display:flex;
+  gap:14px;
+  align-items:flex-start;
+  padding:12px 0;
+  border-bottom:1px solid var(--cream3);
+  font-size:15px;
+  color:var(--ink3);
+}
+.cklist li:last-child{border-bottom:none;}
+.cklist li .ci{font-size:16px;margin-top:2px;flex-shrink:0;}
+.cklist li strong{color:var(--ink);}
+
+/* ======= TIMELINE ======= */
+.timeline{
+  position:relative;
+  padding-left:36px;
+  margin:28px 0;
+}
+.timeline::before{
+  content:'';
+  position:absolute;
+  left:10px;top:0;bottom:0;
+  width:2px;
+  background:linear-gradient(to bottom,var(--terra),var(--border));
+}
+
+.tl-item{position:relative;margin-bottom:28px;}
+.tl-item::before{
+  content:'';
+  position:absolute;
+  left:-30px;top:7px;
+  width:10px;height:10px;
+  border-radius:50%;
+  background:var(--terra);
+  border:2px solid var(--cream);
+  box-shadow:0 0 0 3px rgba(193,91,58,0.2);
+}
+
+.tl-item h4{
+  font-family:'Libre Baskerville',serif;
+  font-size:18px;
+  font-weight:700;
+  color:var(--forest);
+  margin-bottom:8px;
+}
+.tl-item p{font-size:15px;color:var(--ink3);line-height:1.7;margin:0;}
+
+/* ======= CARDS ======= */
+.cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:16px;
+  margin:28px 0;
+}
+
+.card{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:24px;
+  transition:all 0.2s;
+  position:relative;
+  overflow:hidden;
+}
+.card::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:3px;
+  background:linear-gradient(90deg,var(--terra),var(--gold2));
+  opacity:0;
+  transition:opacity 0.2s;
+}
+.card:hover::before{opacity:1;}
+.card:hover{transform:translateY(-4px);box-shadow:0 12px 32px var(--shadow);}
+
+.card-icon{font-size:30px;margin-bottom:14px;}
+.card-title{
+  font-family:'Libre Baskerville',serif;
+  font-size:17px;
+  font-weight:700;
+  color:var(--forest);
+  margin-bottom:8px;
+}
+.card-badge{
+  font-family:'Inconsolata',monospace;
+  font-size:10px;
+  letter-spacing:0.2em;
+  color:var(--terra);
+  margin-bottom:12px;
+  display:block;
+  text-transform:uppercase;
+}
+.card p{font-size:14px;color:var(--ink3);line-height:1.65;margin:0;}
+
+/* ======= PIPELINE VISUAL ======= */
+.pipeline{
+  display:flex;
+  align-items:center;
+  gap:0;
+  overflow-x:auto;
+  padding:20px;
+  background:var(--cream2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  margin:24px 0;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:6px;
+}
+
+.pl-step{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:14px 18px;
+  text-align:center;
+  min-width:110px;
+  box-shadow:0 2px 8px var(--shadow);
+  transition:all 0.2s;
+}
+.pl-step:hover{border-color:var(--terra);transform:scale(1.03);}
+
+.pl-label{
+  font-family:'Inconsolata',monospace;
+  font-size:9px;
+  letter-spacing:0.2em;
+  color:var(--terra);
+  display:block;
+  margin-bottom:6px;
+  text-transform:uppercase;
+}
+
+.pl-name{
+  font-size:14px;
+  font-weight:600;
+  color:var(--forest);
+}
+
+.pl-arrow{
+  color:var(--terra2);
+  font-size:18px;
+  flex-shrink:0;
+  padding:0 4px;
+}
+
+/* ======= ML DIAGRAM ======= */
+.ml-loop{
+  background:var(--forest);
+  border-radius:12px;
+  padding:32px;
+  margin:28px 0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+}
+
+.ml-loop-title{
+  font-family:'Inconsolata',monospace;
+  font-size:10px;
+  letter-spacing:0.35em;
+  color:var(--sage);
+  text-transform:uppercase;
+  margin-bottom:16px;
+  text-align:center;
+}
+
+.ml-step{
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(122,166,138,0.2);
+  border-radius:8px;
+  padding:14px 24px;
+  width:100%;
+  max-width:480px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  transition:all 0.2s;
+}
+.ml-step:hover{background:rgba(255,255,255,0.1);border-color:var(--sage);}
+
+.ml-step-num{
+  font-family:'Inconsolata',monospace;
+  font-size:12px;
+  color:var(--terra3);
+  width:28px;
+  flex-shrink:0;
+}
+
+.ml-step-text strong{
+  font-size:14px;
+  font-weight:600;
+  color:var(--cream);
+  display:block;
+}
+.ml-step-text span{font-size:12px;color:var(--sage);}
+
+.ml-arrow-down{
+  color:rgba(122,166,138,0.4);
+  font-size:16px;
+  text-align:center;
+}
+
+.ml-loop-badge{
+  background:rgba(193,91,58,0.2);
+  border:1px solid rgba(193,91,58,0.4);
+  border-radius:100px;
+  padding:8px 24px;
+  font-family:'Inconsolata',monospace;
+  font-size:11px;
+  color:var(--terra3);
+  letter-spacing:0.2em;
+  margin-top:8px;
+}
+
+/* ======= INTERVIEW CARD ======= */
+.interview-cards{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  margin:28px 0;
+}
+
+.iq-card{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;
+  transition:all 0.2s;
+}
+.iq-card:hover{box-shadow:0 6px 20px var(--shadow);}
+
+.iq-question{
+  background:var(--forest);
+  padding:18px 24px;
+  display:flex;
+  align-items:flex-start;
+  gap:14px;
+}
+
+.iq-q-icon{
+  font-family:'Inconsolata',monospace;
+  font-size:12px;
+  color:var(--terra3);
+  background:rgba(193,91,58,0.2);
+  padding:4px 10px;
+  border-radius:4px;
+  flex-shrink:0;
+  margin-top:1px;
+}
+
+.iq-q-text{
+  font-size:15px;
+  font-weight:500;
+  color:var(--cream);
+  line-height:1.5;
+}
+
+.iq-answer{
+  padding:20px 24px;
+  background:var(--cream2);
+}
+
+.iq-answer p{
+  font-size:14px;
+  color:var(--ink3);
+  line-height:1.75;
+  margin:0;
+}
+.iq-answer p strong{color:var(--forest);}
+
+/* ======= ROADMAP ======= */
+.roadmap{
+  display:flex;
+  flex-direction:column;
+  gap:0;
+  margin:28px 0;
+}
+
+.rm-phase{
+  display:flex;
+  gap:20px;
+  align-items:flex-start;
+  padding:24px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  margin-bottom:8px;
+  background:var(--white);
+  transition:all 0.2s;
+}
+.rm-phase:hover{border-color:var(--forest3);transform:translateX(4px);}
+
+.rm-phase-num{
+  font-family:'Libre Baskerville',serif;
+  font-size:40px;
+  font-weight:700;
+  color:var(--cream3);
+  line-height:1;
+  flex-shrink:0;
+  width:48px;
+}
+
+.rm-phase:nth-child(1) .rm-phase-num{color:rgba(193,91,58,0.25);}
+.rm-phase:nth-child(2) .rm-phase-num{color:rgba(201,146,42,0.25);}
+.rm-phase:nth-child(3) .rm-phase-num{color:rgba(30,58,47,0.2);}
+.rm-phase:nth-child(4) .rm-phase-num{color:rgba(74,124,89,0.2);}
+
+.rm-phase-title{
+  font-family:'Libre Baskerville',serif;
+  font-size:18px;
+  font-weight:700;
+  color:var(--forest);
+  margin-bottom:8px;
+}
+
+.rm-phase-sub{
+  font-family:'Inconsolata',monospace;
+  font-size:10px;
+  letter-spacing:0.2em;
+  color:var(--terra);
+  display:block;
+  margin-bottom:10px;
+  text-transform:uppercase;
+}
+
+.rm-items{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+
+.rm-tag{
+  font-family:'Inconsolata',monospace;
+  font-size:11px;
+  padding:4px 12px;
+  border-radius:100px;
+  border:1px solid var(--border);
+  color:var(--ink3);
+  background:var(--cream2);
+  letter-spacing:0.05em;
+}
+
+/* ======= ARCH DIAGRAM ======= */
+.arch-box{
+  background:var(--forest);
+  border-radius:12px;
+  overflow:hidden;
+  margin:28px 0;
+}
+
+.arch-header{
+  padding:16px 24px;
+  background:rgba(0,0,0,0.2);
+  font-family:'Inconsolata',monospace;
+  font-size:10px;
+  letter-spacing:0.35em;
+  color:var(--sage);
+  text-align:center;
+  text-transform:uppercase;
+}
+
+.arch-layers{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  padding:20px;
+}
+
+.arch-layer{
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(122,166,138,0.15);
+  border-radius:8px;
+  padding:16px 20px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  transition:all 0.2s;
+}
+.arch-layer:hover{background:rgba(255,255,255,0.09);transform:translateX(4px);}
+
+.arch-layer-icon{font-size:20px;flex-shrink:0;}
+.arch-layer-name{font-size:14px;font-weight:600;color:var(--cream);}
+.arch-layer-desc{font-size:13px;color:var(--sage);margin-left:auto;text-align:right;max-width:240px;}
+
+.arch-arrow-down{
+  text-align:center;
+  color:rgba(122,166,138,0.3);
+  font-size:16px;
+  padding:2px;
+}
+
+/* ======= FOOTER ======= */
+.footer{
+  background:var(--forest);
+  text-align:center;
+  padding:70px 40px;
+}
+
+.footer-eyebrow{
+  font-family:'Inconsolata',monospace;
+  font-size:11px;
+  letter-spacing:0.4em;
+  color:var(--sage);
+  margin-bottom:16px;
+  text-transform:uppercase;
+}
+
+.footer h3{
+  font-family:'Libre Baskerville',serif;
+  font-size:40px;
+  font-weight:700;
+  font-style:italic;
+  color:var(--cream);
+  margin-bottom:12px;
+}
+
+.footer h3 em{
+  font-style:normal;
+  color:var(--terra3);
+}
+
+.footer p{
+  font-family:'Inconsolata',monospace;
+  font-size:11px;
+  color:var(--sage);
+  letter-spacing:0.25em;
+  margin-top:8px;
+}
+
+@media(max-width:700px){
+  .chapter{padding:60px 20px;}
+  .hero{padding:60px 24px;}
+  .hero-topics{grid-template-columns:1fr 1fr;}
+  .arch-layer-desc{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== HERO ===== -->
+<header class="hero">
+  <div class="hero-pattern"></div>
+  <div class="hero-ring" style="width:500px;height:500px;top:50%;left:50%;transform:translate(-50%,-50%);"></div>
+  <div class="hero-ring" style="width:700px;height:700px;top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:1.5s;"></div>
+  <div class="hero-ring" style="width:900px;height:900px;top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:3s;"></div>
+
+  <div class="hero-content">
+    <div class="hero-badge">⚡ Part III · Expert Level</div>
+    <h1>
+      Mastering
+      <em>Spark</em>
+      <span class="small">Scheduler Internals · MLlib · GraphX · Cloud · Testing · Interview Mastery · Career Roadmap</span>
+    </h1>
+    <div class="hero-rule"></div>
+    <p class="hero-desc">
+      Parts I and II gave you the <strong>foundation and optimization skills</strong>. Part III takes you to the level where you understand Spark's <strong>deepest internals</strong>, can build <strong>production ML pipelines</strong>, run Spark on <strong>real cloud infrastructure</strong>, write <strong>testable Spark code</strong>, and walk into any <strong>data engineering interview</strong> completely prepared.
+    </p>
+    <div class="hero-topics">
+      <div class="ht-item"><span class="ht-num">01</span> Scheduler Internals</div>
+      <div class="ht-item"><span class="ht-num">02</span> Dynamic Allocation</div>
+      <div class="ht-item"><span class="ht-num">03</span> MLlib Deep Dive</div>
+      <div class="ht-item"><span class="ht-num">04</span> Feature Engineering</div>
+      <div class="ht-item"><span class="ht-num">05</span> GraphX & Pregel</div>
+      <div class="ht-item"><span class="ht-num">06</span> Spark on AWS/GCP</div>
+      <div class="ht-item"><span class="ht-num">07</span> Testing Spark Code</div>
+      <div class="ht-item"><span class="ht-num">08</span> Broadcast Variables</div>
+      <div class="ht-item"><span class="ht-num">09</span> Accumulators</div>
+      <div class="ht-item"><span class="ht-num">10</span> Interview Questions</div>
+      <div class="ht-item"><span class="ht-num">11</span> Career Roadmap</div>
+    </div>
+  </div>
+</header>
+
+<nav class="nav">
+  <a href="#scheduler">Scheduler</a>
+  <a href="#dynamic">Dynamic Alloc</a>
+  <a href="#mllib">MLlib Deep</a>
+  <a href="#features">Features</a>
+  <a href="#graphx">GraphX</a>
+  <a href="#cloud">Cloud</a>
+  <a href="#testing">Testing</a>
+  <a href="#shared">Broadcast & Accum</a>
+  <a href="#interview">Interviews</a>
+  <a href="#roadmap">Roadmap</a>
+</nav>
+
+
+<!-- ===== CHAPTER 1: SCHEDULER INTERNALS ===== -->
+<article class="chapter" id="scheduler">
+  <div class="ch-label">Chapter 01 — Deep Internals</div>
+  <h2>Scheduler <em>Internals</em> — How Spark Decides Who Gets What</h2>
+  <p class="ch-lead">You know that the Driver schedules Tasks onto Executors. But how exactly does it decide which Task goes to which Executor? What happens when two Spark jobs compete for the same cluster? This is the scheduler — and understanding it explains many mysterious performance behaviors.</p>
+
+  <div class="prose">
+
+    <h3>The Two-Level Scheduling System</h3>
+
+    <p>Spark uses a two-level scheduling hierarchy. At the top level, the <strong>Cluster Manager</strong> (YARN, Kubernetes, etc.) decides how many Executors each Spark application gets from the overall cluster. At the bottom level, the <strong>Task Scheduler</strong> inside the Driver decides how to assign tasks to the Executors that were given to it.</p>
+
+    <p>These two levels are independent. The Cluster Manager doesn't know anything about Spark Tasks — it just hands over containers (Executors). The Task Scheduler doesn't negotiate with the Cluster Manager — it just works with whatever Executors it was given.</p>
+
+    <div class="arch-box">
+      <div class="arch-header">Two-Level Scheduling Architecture</div>
+      <div class="arch-layers">
+        <div class="arch-layer">
+          <div class="arch-layer-icon">🏢</div>
+          <div>
+            <div class="arch-layer-name">Cluster Manager (YARN / Kubernetes)</div>
+            <div style="font-size:13px;color:var(--sage);margin-top:4px;">Allocates Executors across all running apps. Doesn't know about Spark tasks, only containers.</div>
+          </div>
+          <div class="arch-layer-desc">Multi-app resource pool</div>
+        </div>
+        <div class="arch-arrow-down">↓ gives Executors to ↓</div>
+        <div class="arch-layer">
+          <div class="arch-layer-icon">🧠</div>
+          <div>
+            <div class="arch-layer-name">Spark Driver → DAGScheduler</div>
+            <div style="font-size:13px;color:var(--sage);margin-top:4px;">Breaks jobs into Stages, submits Stage TaskSets to TaskScheduler. Handles failures, retries, speculative execution.</div>
+          </div>
+          <div class="arch-layer-desc">Job → Stage → TaskSet</div>
+        </div>
+        <div class="arch-arrow-down">↓ sends TaskSets to ↓</div>
+        <div class="arch-layer">
+          <div class="arch-layer-icon">📋</div>
+          <div>
+            <div class="arch-layer-name">TaskScheduler → SchedulerBackend</div>
+            <div style="font-size:13px;color:var(--sage);margin-top:4px;">Takes TaskSets, matches individual Tasks to available Executor slots using data locality preferences.</div>
+          </div>
+          <div class="arch-layer-desc">Task → Executor slot</div>
+        </div>
+        <div class="arch-arrow-down">↓ dispatches to ↓</div>
+        <div class="arch-layer">
+          <div class="arch-layer-icon">⚙️</div>
+          <div>
+            <div class="arch-layer-name">Executors (on Worker Nodes)</div>
+            <div style="font-size:13px;color:var(--sage);margin-top:4px;">Execute Tasks, report results back to Driver via StatusUpdate messages.</div>
+          </div>
+          <div class="arch-layer-desc">Run tasks in thread pool</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Data Locality — Bringing Computation to Data</h3>
+
+    <p>The TaskScheduler's most important job is assigning each Task to an Executor that is as physically close as possible to the data that Task needs. This is called <strong>data locality</strong>. Moving computation to data is always cheaper than moving data to computation.</p>
+
+    <div class="timeline">
+      <div class="tl-item">
+        <h4>PROCESS_LOCAL — Best (0 network cost)</h4>
+        <p>The data partition the Task needs is already in the memory of the exact Executor that will run the Task. This happens when you've cached a DataFrame — future Tasks on that DataFrame can be run directly on the Executor holding the cache. Zero network cost. Maximum speed.</p>
+      </div>
+      <div class="tl-item">
+        <h4>NODE_LOCAL — Very Good (disk read, no network)</h4>
+        <p>The data is on the same physical machine as the Executor, but in a different Executor's memory or on the local disk (HDFS local block). No network transfer — just a local disk read or inter-process communication.</p>
+      </div>
+      <div class="tl-item">
+        <h4>RACK_LOCAL — OK (same data center rack)</h4>
+        <p>The data is on a different machine but in the same data center rack. Network transfer needed, but through a local switch — latency is low (~1ms), bandwidth is high.</p>
+      </div>
+      <div class="tl-item">
+        <h4>ANY — Last Resort (cross-rack network)</h4>
+        <p>Data must travel across racks or across data center zones. Highest latency, most bandwidth cost. Spark waits several seconds for a better locality opportunity before falling back to ANY.</p>
+      </div>
+    </div>
+
+    <div class="hl">
+      <p><strong>The Locality Wait:</strong> Spark doesn't immediately send a Task to an ANY-locality Executor. It first waits <code>spark.locality.wait</code> seconds (default: 3s) for a PROCESS_LOCAL slot to open. Then waits <code>spark.locality.wait.node</code> (default: 3s) for NODE_LOCAL. Then RACK_LOCAL. Only then falls back to ANY. If your cluster is idle, Tasks get assigned quickly. If it's busy, locality degrades — Tasks run wherever slots are free.</p>
+    </div>
+
+    <h3>Within-Application Scheduling: FIFO vs FAIR</h3>
+
+    <p>When <em>one</em> Spark application has multiple jobs running concurrently (common in Spark Streaming, Spark SQL with concurrent queries, or SparkContext.runJob() from multiple threads), Spark needs to decide which job's tasks to schedule first.</p>
+
+    <div class="compare">
+      <div class="cb a">
+        <span class="cb-label">Default Mode</span>
+        <div class="cb-title">FIFO Scheduling</div>
+        <p><strong>First In, First Out.</strong> Jobs run in the order they were submitted. Job 1 gets all available resources until it finishes. Job 2 waits. Simple, good for batch workloads where each job should complete fully before the next starts.</p>
+      </div>
+      <div class="cb b">
+        <span class="cb-label">Enable with: spark.scheduler.mode=FAIR</span>
+        <div class="cb-title">FAIR Scheduling</div>
+        <p><strong>Round-robin across jobs.</strong> Tasks from multiple concurrent jobs are interleaved. Every job gets a share of Executors, running simultaneously. Good for multi-tenant environments or when you have a mix of long-running and short queries. Short queries don't wait behind a huge batch job.</p>
+      </div>
+    </div>
+
+    <h3>Speculative Execution — Duplicating Slow Tasks</h3>
+
+    <p>In a large cluster, hardware problems are constant. A network switch degrading, a disk with high latency, a machine running hot — these create "straggler" tasks that are much slower than their peers for reasons unrelated to data size. Speculative execution handles this.</p>
+
+    <p>When enabled, Spark monitors task progress. If a Task is taking significantly longer than the median of completed Tasks in the same Stage, Spark launches a <strong>duplicate copy of that Task on a different Executor</strong>. Whichever copy finishes first "wins" — its result is used, and the other copy is killed.</p>
+
+    <div class="code" data-lang="CONFIG">
+<span class="cm"># Enable speculative execution</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.speculation"</span>, <span class="str">"true"</span>)
+
+<span class="cm"># A task is speculated if it runs longer than MULTIPLIER × median task time</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.speculation.multiplier"</span>, <span class="str">"1.5"</span>)  <span class="cm"># 1.5× median = speculate</span>
+
+<span class="cm"># Fraction of tasks in a stage that must complete before speculation kicks in</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.speculation.quantile"</span>, <span class="str">"0.75"</span>)  <span class="cm"># 75% done, then speculate</span>
+
+<span class="cm"># Minimum time a task must run before being considered for speculation</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.speculation.minTaskRuntime"</span>, <span class="str">"100ms"</span>)
+    </div>
+
+    <div class="warn">
+      <span class="warn-tag">⚠ Don't Use Speculation for Skewed Data</span>
+      <p>Speculation works for hardware-caused stragglers — tasks slow due to bad luck, not bad data. <strong>If a task is slow because it has 10× more data (skew), speculation won't help</strong> — the duplicate also gets the same huge partition and runs just as slowly. Worse, you now have two slow tasks consuming double the resources. Fix skew with salting/AQE, not speculation.</p>
+    </div>
+  </div>
+</article>
+
+
+<!-- ===== CHAPTER 2: DYNAMIC ALLOCATION ===== -->
+<article class="chapter" id="dynamic">
+  <div class="ch-label">Chapter 02 — Resource Elasticity</div>
+  <h2>Dynamic <em>Allocation</em> — Paying Only for What You Use</h2>
+  <p class="ch-lead">In a static cluster, you ask for 50 Executors and they stay alive whether or not you're using them — wasting money during idle periods. Dynamic Allocation lets Spark scale its Executors up and down automatically based on actual workload. Critical for cloud cost control.</p>
+
+  <div class="prose">
+    <p>Think about a real ETL pipeline. It might spend 10 minutes reading data (needs 100 Executors), then 2 minutes in a massive shuffle (needs 200 Executors), then 5 minutes waiting for the next scheduled trigger (needs 0 Executors). With static allocation, you pay for 200 Executors the entire time — including the idle periods.</p>
+
+    <p>With Dynamic Allocation, Spark grows and shrinks the Executor pool in real time:</p>
+
+    <div class="flow">
+      <div class="flow-title">Dynamic Allocation Lifecycle</div>
+      <div class="fstep">
+        <div class="fstep-num">Scale Up</div>
+        <div class="fstep-body">
+          <strong>Job starts or task queue builds up → request more Executors</strong>
+          <span>When Tasks are waiting in the queue because no Executor slots are free, Spark requests additional Executors from the Cluster Manager. It doubles the request size each round (1 → 2 → 4 → 8...) to scale fast. The Cluster Manager allocates new containers on available Worker Nodes.</span>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="fstep">
+        <div class="fstep-num">Steady</div>
+        <div class="fstep-body">
+          <strong>Active computation → Executors fully utilized</strong>
+          <span>During heavy processing, all Executors are busy running Tasks. No scaling up or down. The pool stays at the needed size. Tasks finish and new Tasks are immediately scheduled on the freed slots.</span>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="fstep">
+        <div class="fstep-num">Scale Down</div>
+        <div class="fstep-body">
+          <strong>Executors idle for too long → release them</strong>
+          <span>When an Executor has no Tasks assigned for more than <code>spark.dynamicAllocation.executorIdleTimeout</code> seconds (default 60s), Spark asks the Cluster Manager to kill it and reclaim the resources. The Executor shuffles its cached data (if any) to other Executors first, then is terminated.</span>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="fstep">
+        <div class="fstep-num">Shuffle Track</div>
+        <div class="fstep-body">
+          <strong>External Shuffle Service preserves shuffle data across deallocation</strong>
+          <span>When an Executor is killed, any shuffle files it wrote for Stage 2 to read would be lost. The External Shuffle Service is a daemon running on each Worker Node that keeps serving shuffle files even after the Executor is removed. This makes dynamic scaling safe — shuffle data survives Executor removal.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="code" data-lang="CONFIG — DYNAMIC ALLOCATION">
+<span class="cm"># Enable Dynamic Allocation</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.dynamicAllocation.enabled"</span>, <span class="str">"true"</span>)
+
+<span class="cm"># MUST enable external shuffle service (otherwise shuffle data is lost on scale-down)</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.shuffle.service.enabled"</span>, <span class="str">"true"</span>)
+
+<span class="cm"># Executor range (min and max)</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.dynamicAllocation.minExecutors"</span>, <span class="str">"2"</span>)   <span class="cm"># Never go below 2</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.dynamicAllocation.maxExecutors"</span>, <span class="str">"200"</span>) <span class="cm"># Never exceed 200</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.dynamicAllocation.initialExecutors"</span>, <span class="str">"10"</span>) <span class="cm"># Start with 10</span>
+
+<span class="cm"># How long an Executor must be idle before release (default: 60s)</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.dynamicAllocation.executorIdleTimeout"</span>, <span class="str">"60s"</span>)
+
+<span class="cm"># How long pending tasks must wait before requesting more Executors (default: 1s)</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.dynamicAllocation.schedulerBacklogTimeout"</span>, <span class="str">"1s"</span>)
+
+<span class="cm"># For Kubernetes: use shuffle tracking instead of external shuffle service</span>
+spark.conf.<span class="fn">set</span>(<span class="str">"spark.dynamicAllocation.shuffleTracking.enabled"</span>, <span class="str">"true"</span>)
+    </div>
+
+    <div class="tip">
+      <span class="tip-tag">💡 Cloud Cost Impact</span>
+      <p>On AWS EMR or Google Dataproc, Dynamic Allocation can cut costs by <strong>40–70%</strong> for workloads with variable load. A pipeline that peaks at 200 nodes for 10 minutes but idles at 5 nodes for 50 minutes pays only for actual usage. Combined with spot/preemptible instances (which are 60–80% cheaper), the savings are enormous. This is why Dynamic Allocation is always enabled in production cloud deployments.</p>
+    </div>
+  </div>
+</article>
+
+
+<!-- ===== CHAPTER 3: MLLIB DEEP DIVE ===== -->
+<article class="chapter" id="mllib">
+  <div class="ch-label">Chapter 03 — Machine Learning at Scale</div>
+  <h2>MLlib <em>Deep Dive</em> — How Distributed ML Actually Works</h2>
+  <p class="ch-lead">MLlib isn't just "scikit-learn but distributed." The algorithms are fundamentally rewritten to work across machines. Understanding how distributed ML differs from single-machine ML reveals why Spark is so powerful for large-scale training — and when it isn't.</p>
+
+  <div class="prose">
+
+    <h3>Why ML Needs Spark (And When It Doesn't)</h3>
+
+    <p>For datasets that fit in one machine's RAM (under ~50GB), scikit-learn or PyTorch on a single machine is almost always <em>faster</em> and simpler than Spark. Spark's distribution overhead is real — use it only when your data is too large for one machine, or when you need to score billions of rows in batch.</p>
+
+    <p>Spark MLlib is the right tool when: your training data is hundreds of GBs or TBs, you need to run ML inference on billions of rows in batch, you want to run the feature engineering pipeline and training in the same distributed system, or you're doing real-time scoring on a Spark Streaming pipeline.</p>
+
+    <h3>The Pipeline API — How MLlib Is Structured</h3>
+
+    <p>MLlib uses a <strong>Pipeline</strong> abstraction inspired by scikit-learn. A Pipeline is a sequence of stages where each stage is either a <strong>Transformer</strong> (transforms data, e.g., scaling) or an <strong>Estimator</strong> (learns from data and produces a Transformer, e.g., a model).</p>
+
+    <div class="pipeline">
+      <div class="pl-step"><span class="pl-label">Input</span><span class="pl-name">📄 Raw DataFrame</span></div>
+      <div class="pl-arrow">→</div>
+      <div class="pl-step"><span class="pl-label">Transformer</span><span class="pl-name">StringIndexer</span></div>
+      <div class="pl-arrow">→</div>
+      <div class="pl-step"><span class="pl-label">Transformer</span><span class="pl-name">VectorAssembler</span></div>
+      <div class="pl-arrow">→</div>
+      <div class="pl-step"><span class="pl-label">Transformer</span><span class="pl-name">StandardScaler</span></div>
+      <div class="pl-arrow">→</div>
+      <div class="pl-step"><span class="pl-label">Estimator</span><span class="pl-name">LogisticRegression</span></div>
+      <div class="pl-arrow">→</div>
+      <div class="pl-step"><span class="pl-label">Output</span><span class="pl-name">✅ Predictions</span></div>
+    </div>
+
+    <div class="code" data-lang="PYSPARK — MLLIB PIPELINE">
+<span class="kw">from</span> pyspark.ml <span class="kw">import</span> Pipeline
+<span class="kw">from</span> pyspark.ml.feature <span class="kw">import</span> StringIndexer, VectorAssembler, StandardScaler
+<span class="kw">from</span> pyspark.ml.classification <span class="kw">import</span> RandomForestClassifier
+<span class="kw">from</span> pyspark.ml.evaluation <span class="kw">import</span> BinaryClassificationEvaluator
+<span class="kw">from</span> pyspark.ml.tuning <span class="kw">import</span> CrossValidator, ParamGridBuilder
+
+<span class="cm"># 1. Feature Engineering stages</span>
+idx = StringIndexer(inputCol=<span class="str">"country"</span>, outputCol=<span class="str">"country_idx"</span>)
+asm = VectorAssembler(
+    inputCols=[<span class="str">"amount"</span>, <span class="str">"age"</span>, <span class="str">"country_idx"</span>, <span class="str">"recency_days"</span>],
+    outputCol=<span class="str">"features_raw"</span>
+)
+scaler = StandardScaler(inputCol=<span class="str">"features_raw"</span>, outputCol=<span class="str">"features"</span>,
+                        withMean=<span class="kw">True</span>, withStd=<span class="kw">True</span>)
+
+<span class="cm"># 2. Model</span>
+rf = RandomForestClassifier(labelCol=<span class="str">"is_fraud"</span>, featuresCol=<span class="str">"features"</span>,
+                            numTrees=<span class="num">100</span>, maxDepth=<span class="num">10</span>)
+
+<span class="cm"># 3. Assemble pipeline</span>
+pipeline = Pipeline(stages=[idx, asm, scaler, rf])
+
+<span class="cm"># 4. Hyperparameter tuning with cross-validation (distributed!)</span>
+paramGrid = ParamGridBuilder() \
+    .<span class="fn">addGrid</span>(rf.numTrees, [<span class="num">50</span>, <span class="num">100</span>, <span class="num">200</span>]) \
+    .<span class="fn">addGrid</span>(rf.maxDepth, [<span class="num">5</span>, <span class="num">10</span>, <span class="num">15</span>]) \
+    .<span class="fn">build</span>()
+
+evaluator = BinaryClassificationEvaluator(labelCol=<span class="str">"is_fraud"</span>)
+
+cv = CrossValidator(
+    estimator=pipeline,
+    estimatorParamMaps=paramGrid,
+    evaluator=evaluator,
+    numFolds=<span class="num">5</span>          <span class="cm"># 5-fold cross-validation, fully distributed</span>
+)
+
+<span class="cm"># 5. Train (distributed across all Executors)</span>
+train_df, test_df = df.<span class="fn">randomSplit</span>([<span class="num">0.8</span>, <span class="num">0.2</span>], seed=<span class="num">42</span>)
+model = cv.<span class="fn">fit</span>(train_df)    <span class="cm"># runs 5 × 9 = 45 pipeline fits in parallel!</span>
+
+<span class="cm"># 6. Predict</span>
+predictions = model.<span class="fn">transform</span>(test_df)
+auc = evaluator.<span class="fn">evaluate</span>(predictions)
+print(<span class="str">f"AUC: {auc:.4f}"</span>)
+
+<span class="cm"># 7. Save model to disk (can be loaded and used for batch scoring)</span>
+model.bestModel.<span class="fn">write</span>().<span class="fn">overwrite</span>().<span class="fn">save</span>(<span class="str">"s3://models/fraud-detector/"</span>)
+    </div>
+
+    <h3>How Distributed Training Actually Works — The Math</h3>
+
+    <p>This is the part textbooks always skip. When you train a Logistic Regression on a billion rows distributed across 200 Executors, what's actually happening during each iteration?</p>
+
+    <div class="ml-loop">
+      <div class="ml-loop-title">Distributed Gradient Descent — One Iteration</div>
+
+      <div class="ml-step">
+        <div class="ml-step-num">01</div>
+        <div class="ml-step-text">
+          <strong>Driver broadcasts current model weights to all Executors</strong>
+          <span>The current parameter vector (weights) is tiny — e.g., 1000 features = 8KB. Broadcast once to all Executors.</span>
+        </div>
+      </div>
+      <div class="ml-arrow-down">↓</div>
+
+      <div class="ml-step">
+        <div class="ml-step-num">02</div>
+        <div class="ml-step-text">
+          <strong>Each Executor computes gradients on its local data partition</strong>
+          <span>Each Executor independently computes ∂Loss/∂w for its partition of the training data using the current weights. 200 Executors do this simultaneously — true parallelism.</span>
+        </div>
+      </div>
+      <div class="ml-arrow-down">↓</div>
+
+      <div class="ml-step">
+        <div class="ml-step-num">03</div>
+        <div class="ml-step-text">
+          <strong>Executor gradients are aggregated (reduced) to the Driver</strong>
+          <span>All 200 gradient vectors are summed using a tree-reduce (not collected to Driver one by one — that would bottleneck). Intermediate nodes aggregate before sending to Driver.</span>
+        </div>
+      </div>
+      <div class="ml-arrow-down">↓</div>
+
+      <div class="ml-step">
+        <div class="ml-step-num">04</div>
+        <div class="ml-step-text">
+          <strong>Driver updates weights using aggregated gradient</strong>
+          <span>w = w - α × (sum of gradients / N). One update step. Loss decreases slightly.</span>
+        </div>
+      </div>
+      <div class="ml-arrow-down">↓</div>
+
+      <div class="ml-step">
+        <div class="ml-step-num">05</div>
+        <div class="ml-step-text">
+          <strong>Repeat until convergence</strong>
+          <span>Each iteration reads the data partitions from memory (if cached) — this is why caching your training DataFrame before calling fit() is critical for MLlib performance.</span>
+        </div>
+      </div>
+
+      <div class="ml-loop-badge">🔄 Repeat for N iterations until loss converges</div>
+    </div>
+
+    <p>This pattern — broadcast parameters, compute local gradients, aggregate, update — is the core of almost all distributed ML training. Spark implements it efficiently using tree-aggregate (O(log n) aggregation instead of O(n)).</p>
+
+    <h3>The ALS Algorithm — How Collaborative Filtering Works</h3>
+
+    <p>ALS (Alternating Least Squares) is MLlib's recommendation engine algorithm. It's used to predict "user U will probably like item I" based on historical ratings. It powers recommendation systems at Netflix, Spotify, and similar platforms.</p>
+
+    <div class="story">
+      <span class="story-tag">🎬 How ALS Works Conceptually</span>
+      <p>You have a matrix of users × items, where each cell is a rating (or implicit signal like "played this song"). Most cells are empty — users haven't rated most things. ALS "fills in" the missing cells.</p>
+      <p>The insight: decompose the huge sparse user-item matrix into two smaller matrices — a <strong>user matrix</strong> (each user represented as a vector of "taste factors") and an <strong>item matrix</strong> (each item as a vector of "feature factors"). The predicted rating for user U on item I is just the dot product of their vectors.</p>
+      <p>ALS alternates: fix the item matrix, solve for the optimal user matrix. Then fix the user matrix, solve for the optimal item matrix. Keep alternating until convergence. Each "solve" step is a least squares problem that can be done in parallel across all users (or items) simultaneously — perfect for Spark.</p>
+    </div>
+
+    <div class="code" data-lang="PYSPARK — ALS RECOMMENDATION">
+<span class="kw">from</span> pyspark.ml.recommendation <span class="kw">import</span> ALS
+
+<span class="cm"># ratings_df: columns [user_id, item_id, rating]</span>
+als = ALS(
+    userCol=<span class="str">"user_id"</span>,
+    itemCol=<span class="str">"item_id"</span>,
+    ratingCol=<span class="str">"rating"</span>,
+    rank=<span class="num">50</span>,           <span class="cm"># latent factor dimensions (50 "taste factors")</span>
+    maxIter=<span class="num">15</span>,        <span class="cm"># 15 alternating iterations</span>
+    regParam=<span class="num">0.01</span>,     <span class="cm"># regularization to prevent overfitting</span>
+    coldStartStrategy=<span class="str">"drop"</span>  <span class="cm"># handle new users/items gracefully</span>
+)
+
+model = als.<span class="fn">fit</span>(train_ratings)
+
+<span class="cm"># Recommend top 10 items for EVERY user — all in parallel</span>
+user_recs = model.<span class="fn">recommendForAllUsers</span>(<span class="num">10</span>)
+
+<span class="cm"># Find top 10 users for each item (who should we market to?)</span>
+item_recs = model.<span class="fn">recommendForAllItems</span>(<span class="num">10</span>)
+    </div>
+  </div>
+</article>
+
+
+<!-- ===== CHAPTER 4: FEATURE ENGINEERING ===== -->
+<article class="chapter" id="features">
+  <div class="ch-label">Chapter 04 — The Art of Preparing Data for ML</div>
+  <h2>Feature <em>Engineering</em> at Scale — The ML Data Pipeline</h2>
+  <p class="ch-lead">80% of ML work is feature engineering — transforming raw data into forms that algorithms can learn from. MLlib has a rich library of distributed feature transformers. Knowing them well means faster, better models.</p>
+
+  <div class="prose">
+
+    <h3>The Essential Transformers — What They Do and Why</h3>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-icon">🔤</div>
+        <div class="card-title">StringIndexer</div>
+        <span class="card-badge">Categorical → Number</span>
+        <p>Converts categorical strings ("USA", "India", "UK") to numeric indices (0.0, 1.0, 2.0) ordered by frequency. Required before any ML algorithm that needs numeric input. Use OneHotEncoder after if you don't want ordinal relationship.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔥</div>
+        <div class="card-title">OneHotEncoder</div>
+        <span class="card-badge">Index → Binary Vector</span>
+        <p>Converts indexed categories to binary vectors. "USA"→[1,0,0], "India"→[0,1,0]. Prevents the model from treating category 2 as "twice as much" as category 1. Essential for linear models. Tree-based models don't need it.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <div class="card-title">VectorAssembler</div>
+        <span class="card-badge">Columns → Feature Vector</span>
+        <p>Combines multiple columns into a single "features" vector column. Required by all MLlib estimators. Input can be numeric columns, indexed columns, or other vectors. The gateway to training any model.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📏</div>
+        <div class="card-title">StandardScaler</div>
+        <span class="card-badge">Normalize Distribution</span>
+        <p>Scales features to have zero mean and unit variance. Critical for algorithms sensitive to feature scale: Logistic Regression, SVM, K-Means, Neural Networks. Not needed for tree-based models (Random Forest, Gradient Boosting).</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🪣</div>
+        <div class="card-title">Bucketizer</div>
+        <span class="card-badge">Continuous → Bins</span>
+        <p>Splits a continuous variable into discrete bins. Age 25 → "18-30" bucket. Creates non-linear features from linear ones. Good when you believe the relationship isn't linear (e.g., very young and very old users behave similarly differently from middle-aged).</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📝</div>
+        <div class="card-title">Tokenizer + HashingTF + IDF</div>
+        <span class="card-badge">Text → Numbers</span>
+        <p>The standard NLP pipeline in MLlib. Tokenizer splits text into words. HashingTF converts word lists to frequency vectors. IDF downweights common words. Result: TF-IDF vectors usable by classifiers.</p>
+      </div>
+    </div>
+
+    <h3>The Window Function — Creating Time-Based Features</h3>
+
+    <p>One of the most powerful feature engineering techniques is creating <strong>aggregated historical features</strong> — "total purchases in last 30 days," "average order value over last 7 transactions," "days since last activity." These capture user behavior patterns far better than raw transaction data.</p>
+
+    <p>Window functions let you compute these efficiently without any joins:</p>
+
+    <div class="code" data-lang="PYSPARK — WINDOW-BASED FEATURE ENGINEERING">
+<span class="kw">from</span> pyspark.sql.window <span class="kw">import</span> Window
+<span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> sum, avg, count, lag, datediff, current_date
+
+<span class="cm"># Define window: per user, ordered by date, looking back 30 days</span>
+user_30d = Window.<span class="fn">partitionBy</span>(<span class="str">"user_id"</span>) \
+                  .<span class="fn">orderBy</span>(<span class="str">"event_date"</span>) \
+                  .<span class="fn">rangeBetween</span>(-<span class="num">30</span>, <span class="num">0</span>)  <span class="cm"># 30 days back</span>
+
+<span class="cm"># Define another window: per user, all history up to current row</span>
+user_all = Window.<span class="fn">partitionBy</span>(<span class="str">"user_id"</span>).<span class="fn">orderBy</span>(<span class="str">"event_date"</span>)
+
+features_df = df \
+  .<span class="fn">withColumn</span>(<span class="str">"spend_30d"</span>,    <span class="fn">sum</span>(<span class="str">"amount"</span>).<span class="fn">over</span>(user_30d)) \
+  .<span class="fn">withColumn</span>(<span class="str">"orders_30d"</span>,   <span class="fn">count</span>(<span class="str">"order_id"</span>).<span class="fn">over</span>(user_30d)) \
+  .<span class="fn">withColumn</span>(<span class="str">"avg_order",</span>    <span class="fn">avg</span>(<span class="str">"amount"</span>).<span class="fn">over</span>(user_all)) \
+  .<span class="fn">withColumn</span>(<span class="str">"prev_amount"</span>,  <span class="fn">lag</span>(<span class="str">"amount"</span>, <span class="num">1</span>).<span class="fn">over</span>(user_all)) \
+  .<span class="fn">withColumn</span>(<span class="str">"days_since_last"</span>,
+      <span class="fn">datediff</span>(<span class="fn">current_date</span>(), <span class="fn">lag</span>(<span class="str">"event_date"</span>, <span class="num">1</span>).<span class="fn">over</span>(user_all)))
+
+<span class="cm"># These features are computed IN PARALLEL across all user_id partitions</span>
+<span class="cm"># No self-joins. No Python loops. Pure Spark window functions.</span>
+    </div>
+
+    <div class="tip">
+      <span class="tip-tag">💡 Window Function Performance</span>
+      <p>Window functions partition data by the <code>partitionBy</code> key — which is a shuffle. All rows for the same user_id go to the same Executor. If your data is <strong>highly skewed by user</strong> (one power user with millions of events), window functions will create skewed partitions too. Detect this in the Spark UI: one Stage with one very slow task. Fix: either process the high-activity users separately, or pre-aggregate before windowing.</p>
+    </div>
+  </div>
+</article>
+
+
+<!-- ===== CHAPTER 5: GRAPHX ===== -->
+<article class="chapter" id="graphx">
+  <div class="ch-label">Chapter 05 — Graph Processing at Scale</div>
+  <h2>GraphX — <em>When Your Data Is a Network</em></h2>
+  <p class="ch-lead">Some of the most interesting data isn't tabular — it's relational. Who knows whom? Which pages link to which? Which products are bought together? This is graph data, and GraphX gives you distributed algorithms to analyze it at billion-node scale.</p>
+
+  <div class="prose">
+
+    <h3>What Is a Graph in Spark's Context?</h3>
+
+    <p>A graph has two components: <strong>vertices</strong> (nodes) and <strong>edges</strong> (connections between nodes). Both vertices and edges can carry arbitrary data (as RDDs of case classes in Scala or Row objects). GraphX represents a graph as two RDDs: a <code>VertexRDD</code> and an <code>EdgeRDD</code>.</p>
+
+    <div class="story">
+      <span class="story-tag">🌐 Real Graph Examples</span>
+      <p><strong>Social Network:</strong> Vertices = users (with attributes: name, age, location). Edges = friendships (with attributes: friendship_date, closeness_score). Algorithm: find communities (connected components), rank influence (PageRank).</p>
+      <p><strong>E-commerce Co-purchase:</strong> Vertices = products. Edges = "bought together" relationships (with weight = co-purchase frequency). Algorithm: find product clusters, recommend "customers also bought."</p>
+      <p><strong>Financial Fraud:</strong> Vertices = bank accounts. Edges = transactions (with amount, timestamp). Algorithm: find suspicious cycles, identify central accounts in money laundering rings (triangle count, shortest paths).</p>
+    </div>
+
+    <h3>PageRank — Measuring Node Importance</h3>
+
+    <p>PageRank is the algorithm Google invented to rank web pages. The intuition: a page is important if many important pages link to it. This is circular — importance depends on importance — but it converges when solved iteratively.</p>
+
+    <p>The algorithm: every vertex starts with a rank of 1.0. In each iteration, every vertex distributes its current rank equally to all neighbors it points to. After many iterations, vertices with many important in-links converge to a high rank. Vertices with few or unimportant in-links converge to a low rank.</p>
+
+    <div class="code" data-lang="SCALA — GRAPHX (GraphX is Scala/Java only)">
+<span class="kw">import</span> org.apache.spark.graphx._
+<span class="kw">import</span> org.apache.spark.graphx.lib._
+
+<span class="cm">// Build graph from edge list</span>
+<span class="kw">val</span> edges: <span class="cls">RDD</span>[<span class="cls">Edge</span>[<span class="cls">Double</span>]] = spark.sparkContext.<span class="fn">parallelize</span>(<span class="cls">Seq</span>(
+  <span class="cls">Edge</span>(<span class="num">1L</span>, <span class="num">2L</span>, <span class="num">1.0</span>),  <span class="cm">// node 1 → node 2</span>
+  <span class="cls">Edge</span>(<span class="num">2L</span>, <span class="num">3L</span>, <span class="num">1.0</span>),  <span class="cm">// node 2 → node 3</span>
+  <span class="cls">Edge</span>(<span class="num">3L</span>, <span class="num">1L</span>, <span class="num">1.0</span>),  <span class="cm">// node 3 → node 1 (cycle!)</span>
+  <span class="cls">Edge</span>(<span class="num">4L</span>, <span class="num">1L</span>, <span class="num">1.0</span>)   <span class="cm">// node 4 → node 1</span>
+))
+
+<span class="kw">val</span> graph = <span class="cls">Graph</span>.<span class="fn">fromEdges</span>(edges, defaultValue = <span class="num">1.0</span>)
+
+<span class="cm">// Run PageRank — 10 iterations</span>
+<span class="kw">val</span> ranks = graph.<span class="fn">pageRank</span>(tol = <span class="num">0.001</span>).vertices  <span class="cm">// (vertexId, rank)</span>
+
+<span class="cm">// Connected Components — which nodes form clusters?</span>
+<span class="kw">val</span> cc = graph.<span class="fn">connectedComponents</span>().vertices  <span class="cm">// (vertexId, componentId)</span>
+
+<span class="cm">// Triangle Count — local clustering coefficient</span>
+<span class="kw">val</span> tc = graph.<span class="fn">triangleCount</span>().vertices  <span class="cm">// (vertexId, numTriangles)</span>
+    </div>
+
+    <h3>The Pregel API — Your Own Graph Algorithms</h3>
+
+    <p>PageRank, Connected Components, Shortest Paths — these are built-in. But what if you need a custom graph algorithm? The <strong>Pregel API</strong> is a general framework for writing distributed graph algorithms. It's based on the "think like a vertex" model.</p>
+
+    <p>The model: in each superstep, every vertex can receive messages from its neighbors, update its value based on those messages, and send new messages to its neighbors. The algorithm terminates when no more messages are sent. This naturally maps to Spark's distributed execution.</p>
+
+    <div class="story">
+      <span class="story-tag">📬 Pregel — Shortest Path, Explained Simply</span>
+      <p>You want to find the shortest distance from vertex 1 to every other vertex. Initialize: vertex 1 has distance 0, all others have distance ∞.</p>
+      <p>Superstep 1: Vertex 1 sends message "my distance is 0" to its neighbors. Each neighbor receives 0 + edge_weight. If that's less than their current distance (∞), they update and send a new message to their neighbors.</p>
+      <p>Superstep 2: Neighbors of vertex 1 propagate their distances. The wave spreads outward. Each vertex only updates if it receives a shorter path than what it already has.</p>
+      <p>This continues until no vertex updates — meaning all shortest paths have been found. The key: each superstep runs in parallel across ALL vertices simultaneously. For a billion-node graph, each superstep processes one billion vertices concurrently.</p>
+    </div>
+  </div>
+</article>
+
+
+<!-- ===== CHAPTER 6: CLOUD ===== -->
+<article class="chapter" id="cloud">
+  <div class="ch-label">Chapter 06 — Production Infrastructure</div>
+  <h2>Spark on <em>Cloud</em> — AWS, GCP, and Azure</h2>
+  <p class="ch-lead">Almost all real Spark deployments today run on cloud infrastructure. Each major cloud has a managed Spark service. Knowing how they work, their tradeoffs, and their cost model is essential for any production data engineer.</p>
+
+  <div class="prose">
+
+    <h3>AWS EMR — Elastic MapReduce</h3>
+
+    <p>Amazon's managed Hadoop/Spark service. You define a cluster configuration (master node type, core node type, number of nodes), and EMR launches EC2 instances, installs Spark, configures HDFS/YARN, and gives you a cluster ready to use.</p>
+
+    <div class="timeline">
+      <div class="tl-item">
+        <h4>EMR Core Concepts</h4>
+        <p><strong>Master Node:</strong> Runs YARN ResourceManager and HDFS NameNode. Usually one node (non-HA) or 3 (HA). Must be On-Demand (not Spot) — losing the master kills the cluster.<br><br><strong>Core Nodes:</strong> Run YARN NodeManagers and HDFS DataNodes. Store data in HDFS. Can be Spot but risky — losing a core node can corrupt HDFS.<br><br><strong>Task Nodes:</strong> Run YARN NodeManagers only, no HDFS. Pure compute. Perfect for Spot instances — losing them just slows the job, doesn't corrupt data. Use Task Nodes with Spot for maximum cost savings.</p>
+      </div>
+      <div class="tl-item">
+        <h4>EMR + S3 Instead of HDFS</h4>
+        <p>In practice, most EMR clusters use <strong>S3 as the primary storage layer</strong> instead of HDFS. You read from S3, process in Spark, write to S3. HDFS is only used for shuffle files (temporary). This means your cluster can be ephemeral — spin it up for a job, shut it down when done. No data loss because data lives in S3, not the cluster. This "ephemeral cluster" pattern is hugely cost-efficient.</p>
+      </div>
+      <div class="tl-item">
+        <h4>EMR Serverless (2022+)</h4>
+        <p>No cluster management at all. Submit a Spark job, AWS automatically provisions the resources, runs it, and releases the resources. You pay per vCPU-second used. No idle costs, no cluster configuration. The trade-off: cold start latency (provisioning takes 1–3 minutes). Best for sporadic batch jobs.</p>
+      </div>
+    </div>
+
+    <h3>Google Dataproc — GCP's Spark Service</h3>
+
+    <p>Google Cloud's managed Spark service. Similar to EMR but tighter GCP integration (BigQuery connector, Cloud Storage native support, Dataproc Serverless). Cluster creation is faster than EMR (~90 seconds vs 5–10 minutes). The key advantage: <strong>native BigQuery integration</strong> — read from or write to BigQuery at full Spark parallelism without data movement.</p>
+
+    <h3>Databricks — The Cloud-Native Spark Platform</h3>
+
+    <p>Databricks was founded by the creators of Spark. It's a fully managed cloud platform (available on AWS, Azure, GCP) built on top of Spark but with significant enhancements:</p>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-icon">⚡</div>
+        <div class="card-title">Photon Engine</div>
+        <span class="card-badge">Databricks-Only</span>
+        <p>A C++-based vectorized query engine that replaces Spark's JVM-based Tungsten. Up to 3–5× faster for SQL and DataFrame workloads. Handles data types and operations that JVM Tungsten struggles with.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔄</div>
+        <div class="card-title">Delta Live Tables</div>
+        <span class="card-badge">Declarative Pipelines</span>
+        <p>Declare your data pipeline as a set of table definitions. Databricks automatically manages dependencies, retries, data quality checks, and incremental processing. Like dbt but for Spark with streaming support.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🗂️</div>
+        <div class="card-title">Unity Catalog</div>
+        <span class="card-badge">Data Governance</span>
+        <p>Unified data catalog across all workspaces. Fine-grained access control (row-level, column-level security). Lineage tracking — trace which table a column came from, what jobs wrote to it. The governance layer the lakehouse needs.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🖥️</div>
+        <div class="card-title">Auto-Scaling Clusters</div>
+        <span class="card-badge">Cost Optimization</span>
+        <p>Databricks has very aggressive and intelligent auto-scaling built in. Clusters scale up in seconds (using pre-warmed nodes) and scale down rapidly. Combined with Spot instances, this makes Databricks the most cost-efficient managed Spark platform.</p>
+      </div>
+    </div>
+
+    <h3>Spark on Kubernetes — The Modern Approach</h3>
+
+    <p>Running Spark on Kubernetes (K8s) is increasingly common, especially in organizations that standardize on K8s for all workloads. Each Executor becomes a K8s Pod. When a job finishes, Pods are immediately terminated — no idle cluster sitting around.</p>
+
+    <div class="code" data-lang="BASH — SUBMIT SPARK JOB TO KUBERNETES">
+<span class="cm"># Submit a Spark job to a Kubernetes cluster</span>
+spark-submit \
+  --master k8s://https://&lt;k8s-api-server&gt;:6443 \
+  --deploy-mode cluster \
+  --name fraud-detection \
+  --conf spark.kubernetes.container.image=my-repo/spark:3.5.0 \
+  --conf spark.kubernetes.namespace=spark-jobs \
+  --conf spark.executor.instances=50 \
+  --conf spark.executor.memory=8g \
+  --conf spark.executor.cores=4 \
+  --conf spark.kubernetes.driver.pod.name=fraud-detection-driver \
+  --conf spark.kubernetes.executor.request.cores=4 \
+  <span class="cm"># Dynamic allocation on K8s (uses shuffle tracking, no external shuffle service needed)</span>
+  --conf spark.dynamicAllocation.enabled=true \
+  --conf spark.dynamicAllocation.shuffleTracking.enabled=true \
+  --conf spark.dynamicAllocation.maxExecutors=200 \
+  s3a://my-bucket/jobs/fraud_detection.py
+    </div>
+
+    <div class="tip">
+      <span class="tip-tag">💡 Cloud Storage Tuning — The Hidden Bottleneck</span>
+      <p>Reading from S3 or GCS is <strong>not the same as reading from HDFS</strong>. Object storage has high latency for listing operations (S3 LIST can take seconds for large directories) and limited throughput per prefix. Key tunings: use <strong>S3A committers</strong> for atomic writes, enable <strong>S3A fast upload</strong> for streaming uploads, use <strong>partitioned paths</strong> (<code>s3://bucket/date=2024-01-01/</code>) to limit list operations, and set <code>fs.s3a.connection.maximum=200</code> to allow more parallel connections. Ignoring these can make I/O the bottleneck even with fast compute.</p>
+    </div>
+  </div>
+</article>
+
+
+<!-- ===== CHAPTER 7: TESTING ===== -->
+<article class="chapter" id="testing">
+  <div class="ch-label">Chapter 07 — Production-Grade Code</div>
+  <h2>Testing <em>Spark Code</em> — Writing Jobs That Actually Work</h2>
+  <p class="ch-lead">Most data engineers write Spark jobs and "test" them by running them on real data and eyeballing the output. This is not testing. Real Spark jobs need real tests — unit tests, integration tests, data quality checks. Here's how to build them properly.</p>
+
+  <div class="prose">
+
+    <h3>The Testing Challenge — Spark Is Hard to Test</h3>
+
+    <p>Testing Spark code is genuinely harder than testing normal Python. You can't just <code>assert df.count() == 5</code> in isolation — you need a SparkSession. And spinning up a full cluster for every test is impractical. The solution: use a <strong>local SparkSession</strong> in tests and keep your business logic testable by separating it from Spark-specific code.</p>
+
+    <div class="code" data-lang="PYTHON — SPARK UNIT TESTING WITH PYTEST">
+<span class="cm"># conftest.py — shared SparkSession fixture for all tests</span>
+<span class="kw">import</span> pytest
+<span class="kw">from</span> pyspark.sql <span class="kw">import</span> SparkSession
+
+<span class="op">@</span>pytest.fixture(scope=<span class="str">"session"</span>)  <span class="cm"># One SparkSession for all tests — fast</span>
+<span class="kw">def</span> <span class="fn">spark</span>():
+    session = SparkSession.<span class="fn">builder</span> \
+        .<span class="fn">master</span>(<span class="str">"local[2]"</span>) \         <span class="cm"># 2 threads — fast, no real cluster</span>
+        .<span class="fn">appName</span>(<span class="str">"test-session"</span>) \
+        .<span class="fn">config</span>(<span class="str">"spark.sql.shuffle.partitions"</span>, <span class="str">"2"</span>) \  <span class="cm"># Small for tests</span>
+        .<span class="fn">config</span>(<span class="str">"spark.ui.enabled"</span>, <span class="str">"false"</span>) \      <span class="cm"># No web UI in tests</span>
+        .<span class="fn">getOrCreate</span>()
+    <span class="kw">yield</span> session
+    session.<span class="fn">stop</span>()
+
+<span class="cm"># test_transformations.py — test your actual business logic</span>
+<span class="kw">from</span> pyspark.sql <span class="kw">import</span> Row
+<span class="kw">from</span> myapp.transforms <span class="kw">import</span> add_revenue_tier, clean_nulls
+
+<span class="kw">class</span> <span class="cls">TestRevenueTier</span>:
+    <span class="kw">def</span> <span class="fn">test_high_tier_above_1000</span>(self, spark):
+        <span class="cm"># Arrange: create tiny in-memory test DataFrame</span>
+        input_df = spark.<span class="fn">createDataFrame</span>([
+            <span class="cls">Row</span>(order_id=<span class="num">1</span>, amount=<span class="num">1500.0</span>),
+            <span class="cls">Row</span>(order_id=<span class="num">2</span>, amount=<span class="num">500.0</span>),
+            <span class="cls">Row</span>(order_id=<span class="num">3</span>, amount=<span class="num">50.0</span>),
+        ])
+
+        <span class="cm"># Act: apply your transformation</span>
+        result = <span class="fn">add_revenue_tier</span>(input_df)
+
+        <span class="cm"># Assert: check output values</span>
+        rows = {r.order_id: r.tier <span class="kw">for</span> r <span class="kw">in</span> result.<span class="fn">collect</span>()}
+        <span class="kw">assert</span> rows[<span class="num">1</span>] == <span class="str">"high"</span>
+        <span class="kw">assert</span> rows[<span class="num">2</span>] == <span class="str">"medium"</span>
+        <span class="kw">assert</span> rows[<span class="num">3</span>] == <span class="str">"low"</span>
+
+    <span class="kw">def</span> <span class="fn">test_null_amount_dropped</span>(self, spark):
+        input_df = spark.<span class="fn">createDataFrame</span>([
+            <span class="cls">Row</span>(order_id=<span class="num">1</span>, amount=<span class="num">100.0</span>),
+            <span class="cls">Row</span>(order_id=<span class="num">2</span>, amount=<span class="kw">None</span>),  <span class="cm"># should be dropped</span>
+        ])
+        result = <span class="fn">clean_nulls</span>(input_df)
+        <span class="kw">assert</span> result.<span class="fn">count</span>() == <span class="num">1</span>
+        <span class="kw">assert</span> result.<span class="fn">first</span>().order_id == <span class="num">1</span>
+    </div>
+
+    <h3>The Key Design Pattern: Pure Functions</h3>
+
+    <p>Make your transformations <strong>pure functions</strong> — functions that take a DataFrame and return a DataFrame, with no side effects and no external state. This is what makes testing easy.</p>
+
+    <div class="compare">
+      <div class="cb bad">
+        <span class="cb-label">Hard to Test</span>
+        <div class="cb-title">Mixed Logic</div>
+        <p>One giant function that reads from S3, transforms, writes to Delta, sends a Slack notification. You can't test the transformation in isolation because it always reads from S3. Painful to mock. Impossible to run in CI.</p>
+      </div>
+      <div class="cb good">
+        <span class="cb-label">Easy to Test</span>
+        <div class="cb-title">Separated Concerns</div>
+        <p>Read logic in one function. Transform logic as pure functions (DataFrame → DataFrame). Write logic in one function. You test only the transform functions with tiny in-memory DataFrames. Fast, isolated, repeatable.</p>
+      </div>
+    </div>
+
+    <h3>Data Quality Checks — Great Expectations + Spark</h3>
+
+    <p>Beyond unit tests, production Spark pipelines need <strong>data quality validation</strong> built into the pipeline itself. Great Expectations is the standard library for this.</p>
+
+    <div class="code" data-lang="PYSPARK — DATA QUALITY VALIDATION">
+<span class="kw">from</span> great_expectations.dataset <span class="kw">import</span> SparkDFDataset
+
+<span class="kw">def</span> <span class="fn">validate_output</span>(df):
+    ge_df = SparkDFDataset(df)
+
+    <span class="cm"># These assertions run as Spark transformations — distributed!</span>
+    results = []
+    results.<span class="fn">append</span>(ge_df.<span class="fn">expect_column_values_to_not_be_null</span>(<span class="str">"order_id"</span>))
+    results.<span class="fn">append</span>(ge_df.<span class="fn">expect_column_values_to_be_between</span>(<span class="str">"amount"</span>, <span class="num">0</span>, <span class="num">1000000</span>))
+    results.<span class="fn">append</span>(ge_df.<span class="fn">expect_column_values_to_be_in_set</span>(
+        <span class="str">"status"</span>, [<span class="str">"pending"</span>, <span class="str">"completed"</span>, <span class="str">"cancelled"</span>]
+    ))
+    results.<span class="fn">append</span>(ge_df.<span class="fn">expect_table_row_count_to_be_between</span>(
+        min_value=<span class="num">1000</span>, max_value=<span class="num">10000000</span>  <span class="cm"># sanity check row count</span>
+    ))
+
+    failed = [r <span class="kw">for</span> r <span class="kw">in</span> results <span class="kw">if not</span> r[<span class="str">"success"</span>]]
+    <span class="kw">if</span> failed:
+        <span class="kw">raise</span> ValueError(<span class="str">f"Data quality checks failed: {failed}"</span>)
+
+    <span class="kw">return</span> df  <span class="cm"># Return df unchanged — can chain in pipeline</span>
+    </div>
+  </div>
+</article>
+
+
+<!-- ===== CHAPTER 8: BROADCAST & ACCUMULATORS ===== -->
+<article class="chapter" id="shared">
+  <div class="ch-label">Chapter 08 — Sharing Data Across the Cluster</div>
+  <h2>Broadcast Variables <em>&amp;</em> Accumulators</h2>
+  <p class="ch-lead">Sometimes you need to share data with all Executors efficiently, or collect information back from Executors to the Driver. Broadcast variables and Accumulators are the two mechanisms Spark provides for this — and each has a specific, important use case.</p>
+
+  <div class="prose">
+
+    <h3>Broadcast Variables — Sharing a Large Lookup Table</h3>
+
+    <p>You already know that Spark broadcasts small DataFrames for joins automatically. But what if you want to explicitly broadcast a Python dictionary, a trained model, or a large lookup table that you use inside a UDF or map function?</p>
+
+    <p>Without broadcast: every Task closure-captures the variable, and it gets serialized and sent to each Task individually. If you have 10,000 Tasks and a 100MB lookup table, you're sending 100MB × 10,000 = 1TB of data over the network. Catastrophic.</p>
+
+    <p>With broadcast: the variable is sent once to each Executor (50 Executors × 100MB = 5GB total). All 200 Tasks on that Executor share the same single copy in memory. 200× less network traffic.</p>
+
+    <div class="code" data-lang="PYSPARK — BROADCAST VARIABLE">
+<span class="cm"># Example: broadcast a large category mapping dict</span>
+category_map = {
+    <span class="num">1001</span>: <span class="str">"Electronics"</span>,
+    <span class="num">1002</span>: <span class="str">"Clothing"</span>,
+    <span class="num">1003</span>: <span class="str">"Books"</span>,
+    <span class="cm"># ... 500,000 more mappings (large dict!)</span>
+}
+
+<span class="cm"># Broadcast it: ONE copy per Executor, not per Task</span>
+bc_map = spark.sparkContext.<span class="fn">broadcast</span>(category_map)
+
+<span class="cm"># Use inside a Pandas UDF — bc_map.value accesses the dict</span>
+<span class="op">@</span><span class="fn">pandas_udf</span>(<span class="cls">StringType</span>())
+<span class="kw">def</span> <span class="fn">map_category</span>(ids: pd.Series) -> pd.Series:
+    <span class="cm"># bc_map.value is the Python dict — accessed from Executor memory, not Driver</span>
+    <span class="kw">return</span> ids.<span class="fn">map</span>(<span class="kw">lambda</span> x: bc_map.value.<span class="fn">get</span>(x, <span class="str">"Unknown"</span>))
+
+df.<span class="fn">withColumn</span>(<span class="str">"category_name"</span>, <span class="fn">map_category</span>(df.category_id))
+
+<span class="cm"># Always unpersist when done to free Executor memory</span>
+bc_map.<span class="fn">unpersist</span>()
+
+<span class="cm"># Advanced: broadcast a trained scikit-learn model for distributed inference</span>
+<span class="kw">import</span> pickle
+<span class="kw">with</span> <span class="fn">open</span>(<span class="str">"fraud_model.pkl"</span>, <span class="str">"rb"</span>) <span class="kw">as</span> f:
+    sklearn_model = pickle.<span class="fn">load</span>(f)
+
+bc_model = spark.sparkContext.<span class="fn">broadcast</span>(sklearn_model)
+
+<span class="op">@</span><span class="fn">pandas_udf</span>(<span class="cls">DoubleType</span>())
+<span class="kw">def</span> <span class="fn">score_transactions</span>(features: pd.Series) -> pd.Series:
+    model = bc_model.value
+    <span class="kw">return</span> pd.Series(model.<span class="fn">predict_proba</span>(features.<span class="fn">tolist</span>())[:, <span class="num">1</span>])
+    </div>
+
+    <h3>Accumulators — Collecting Metrics Back to the Driver</h3>
+
+    <p>Accumulators work in the opposite direction: they let Executors send data back to the Driver. The classic use case: counting "bad rows" across all partitions during a transformation — without doing a separate <code>.filter().count()</code> pass.</p>
+
+    <p>The key rule: Accumulators can only be <strong>added to</strong> (incremented) by Executors. Only the Driver can read the final accumulated value. They're not for complex computation — just for counting, summing, and collecting diagnostic metrics.</p>
+
+    <div class="code" data-lang="PYSPARK — ACCUMULATORS">
+<span class="cm"># Create accumulators</span>
+null_count    = spark.sparkContext.<span class="fn">accumulator</span>(<span class="num">0</span>)
+negative_amt  = spark.sparkContext.<span class="fn">accumulator</span>(<span class="num">0</span>)
+processed_rows = spark.sparkContext.<span class="fn">accumulator</span>(<span class="num">0</span>)
+
+<span class="kw">def</span> <span class="fn">validate_and_filter</span>(row):
+    <span class="cm"># Executors run this — can INCREMENT accumulators</span>
+    processed_rows.<span class="fn">add</span>(<span class="num">1</span>)
+
+    <span class="kw">if</span> row.amount <span class="kw">is</span> <span class="kw">None</span>:
+        null_count.<span class="fn">add</span>(<span class="num">1</span>)
+        <span class="kw">return</span> <span class="kw">False</span>
+
+    <span class="kw">if</span> row.amount < <span class="num">0</span>:
+        negative_amt.<span class="fn">add</span>(<span class="num">1</span>)
+        <span class="kw">return</span> <span class="kw">False</span>
+
+    <span class="kw">return</span> <span class="kw">True</span>
+
+<span class="cm"># Run the filter (this is an action — accumulators update here)</span>
+clean_df = df.<span class="fn">rdd</span>.<span class="fn">filter</span>(<span class="fn">validate_and_filter</span>).<span class="fn">toDF</span>()
+clean_df.<span class="fn">count</span>()  <span class="cm"># trigger computation</span>
+
+<span class="cm"># Driver reads accumulated values AFTER the action completes</span>
+print(<span class="str">f"Rows processed: {processed_rows.value}"</span>)
+print(<span class="str">f"Null amounts dropped: {null_count.value}"</span>)
+print(<span class="str">f"Negative amounts dropped: {negative_amt.value}"</span>)
+
+<span class="cm"># Log this to your data pipeline monitoring system</span>
+    </div>
+
+    <div class="warn">
+      <span class="warn-tag">⚠ Accumulator Gotcha — Double-Counting on Retry</span>
+      <p>If a Task fails and Spark retries it, the accumulator is incremented <strong>twice</strong> — once in the failed attempt, once in the successful retry. For non-idempotent accumulators (counts, sums), this means <strong>overcounting</strong>. Accumulators are designed for approximate diagnostic metrics, not exact business counts. For exact counts, use <code>.count()</code> after filtering. Never make business decisions based purely on accumulator values.</p>
+    </div>
+  </div>
+</article>
+
+
+<!-- ===== CHAPTER 9: INTERVIEW QUESTIONS ===== -->
+<article class="chapter" id="interview">
+  <div class="ch-label">Chapter 09 — Career Preparation</div>
+  <h2>Interview <em>Questions</em> — Every Important One, With Full Answers</h2>
+  <p class="ch-lead">These are the actual questions asked in data engineering interviews at Google, Meta, Amazon, Databricks, and top tech companies. Not just the question — the full answer you should give, with the depth that impresses senior engineers.</p>
+
+  <div class="prose">
+
+    <div class="interview-cards">
+
+      <div class="iq-card">
+        <div class="iq-question">
+          <span class="iq-q-icon">Q</span>
+          <span class="iq-q-text">What is the difference between transformation and action in Spark? Why does this design exist?</span>
+        </div>
+        <div class="iq-answer">
+          <p><strong>Transformations</strong> (map, filter, groupBy, join) create a new RDD/DataFrame from an existing one but don't execute anything — they're lazy. Spark just records the operation in the DAG. <strong>Actions</strong> (count, collect, save, show) trigger actual computation — Spark takes the entire accumulated DAG, optimizes it with Catalyst, and executes it across the cluster.</p>
+          <p>The design exists for <strong>whole-plan optimization</strong>: by waiting to see all transformations before executing, Catalyst can reorder operations (push filters early), combine steps (fuse multiple maps), and choose optimal physical strategies (broadcast vs sort-merge join). If Spark executed eagerly after each transformation, it could never do these global optimizations — it would be forced to execute suboptimally one step at a time.</p>
+        </div>
+      </div>
+
+      <div class="iq-card">
+        <div class="iq-question">
+          <span class="iq-q-icon">Q</span>
+          <span class="iq-q-text">Explain data skew and how you would handle it in production.</span>
+        </div>
+        <div class="iq-answer">
+          <p><strong>Data skew</strong> occurs when one or more partitions after a shuffle contain dramatically more data than others — typically because a groupBy or join key has very unequal distribution (e.g., 80% of orders from one country). The symptom: one Task in a Stage takes 100× longer than all others, stalling the entire Stage.</p>
+          <p>Solutions in order of preference: (1) <strong>Enable AQE</strong> (Spark 3.2+) — it auto-detects and splits skewed partitions at runtime with zero code changes. (2) <strong>Broadcast join</strong> — if skew comes from a join and one side is small enough, broadcasting eliminates the shuffle and the skew entirely. (3) <strong>Salting</strong> — add a random salt number (0 to N) to the skewed key, distribute the hot key across N partitions, do a two-phase aggregation. For extreme cases: (4) isolate the hot key, process it separately, union the results.</p>
+        </div>
+      </div>
+
+      <div class="iq-card">
+        <div class="iq-question">
+          <span class="iq-q-icon">Q</span>
+          <span class="iq-q-text">What happens internally when you call groupBy().agg() in Spark?</span>
+        </div>
+        <div class="iq-answer">
+          <p>Catalyst first optimizes the logical plan — applying predicate pushdown and column pruning. It then generates a physical plan with a <strong>partial aggregation</strong> phase (map-side) followed by a <strong>shuffle</strong> and <strong>final aggregation</strong> (reduce-side).</p>
+          <p>Stage 1 (pre-shuffle): Each Task reads its partition and performs partial aggregation — if the key "USA" appears 10,000 times in one partition, they're combined into a single partial sum. This dramatically reduces shuffle data. Stage boundary: shuffle by group key — all rows with the same key go to the same Executor. Stage 2 (post-shuffle): Each Task receives all partial aggregates for its assigned keys, combines them into the final aggregate value. The result is one row per unique key distributed across partitions. For SQL COUNT DISTINCT, Spark uses <strong>HyperLogLog</strong> sketches for approximate counts or a more expensive exact two-phase aggregation.</p>
+        </div>
+      </div>
+
+      <div class="iq-card">
+        <div class="iq-question">
+          <span class="iq-q-icon">Q</span>
+          <span class="iq-q-text">Explain the Catalyst Optimizer. What optimizations does it apply automatically?</span>
+        </div>
+        <div class="iq-answer">
+          <p>Catalyst is Spark SQL's query optimizer that transforms your logical plan into an optimized physical execution plan in 4 phases: Analysis (resolve column names, validate schema), Logical Optimization (apply rule-based transformations), Physical Planning (choose physical algorithms using cost model), Code Generation (compile to JVM bytecode via Tungsten).</p>
+          <p>Key automatic optimizations: <strong>Predicate pushdown</strong> — push filter conditions as close to data source as possible (into Parquet/ORC readers, skipping entire row groups). <strong>Column pruning</strong> — only read columns actually used in the query. <strong>Constant folding</strong> — evaluate constant expressions at compile time. <strong>Filter reordering</strong> — apply cheaper filters before expensive ones. <strong>Join strategy selection</strong> — auto-choose broadcast join for small tables. <strong>Partial aggregation</strong> — aggregate before shuffle to reduce data movement. All automatic — you get these for free when using DataFrames/SQL (not raw RDDs).</p>
+        </div>
+      </div>
+
+      <div class="iq-card">
+        <div class="iq-question">
+          <span class="iq-q-icon">Q</span>
+          <span class="iq-q-text">When would you use cache() vs persist()? And when should you NOT cache?</span>
+        </div>
+        <div class="iq-answer">
+          <p><code>cache()</code> is shorthand for <code>persist(StorageLevel.MEMORY_AND_DISK)</code> in DataFrames (or MEMORY_ONLY for RDDs). <code>persist()</code> lets you specify the exact storage level — MEMORY_ONLY (fastest, lost if evicted), MEMORY_AND_DISK (safe default, spills to disk), DISK_ONLY (for datasets too large for memory), MEMORY_ONLY_2 (replicated for fast fault recovery).</p>
+          <p><strong>Cache when:</strong> A DataFrame is used more than once in your program. The computation to produce it is expensive (complex joins, ML feature engineering). <strong>Don't cache when:</strong> The DataFrame is used only once in a linear pipeline — caching wastes storage memory with zero benefit. The DataFrame is too large to fit in memory and you don't need it often — disk spill makes it slower than recomputing. The DataFrame changes — cached data is stale as soon as the source changes. Always call <code>unpersist()</code> explicitly when done — Spark's LRU eviction can be slow to release large caches.</p>
+        </div>
+      </div>
+
+      <div class="iq-card">
+        <div class="iq-question">
+          <span class="iq-q-icon">Q</span>
+          <span class="iq-q-text">How does Spark handle fault tolerance? What happens when an Executor dies?</span>
+        </div>
+        <div class="iq-answer">
+          <p>Spark's fault tolerance is based on <strong>lineage recomputation</strong>, not data replication. Every RDD/DataFrame knows its complete history — which parent RDD it came from and which transformation produced it. This chain is called the lineage graph.</p>
+          <p>When an Executor dies: (1) The Driver detects the failure via heartbeat timeout. (2) It identifies which partitions were being computed on that Executor. (3) It resubmits those Tasks to other available Executors. (4) The replacement Tasks recompute the lost partitions from the last reliable ancestor using the lineage graph. If the lost partition is in the middle of a multi-stage job, Spark recomputes only that partition's lineage — not the entire job. For shuffle data specifically: if an Executor holding shuffle output dies before Stage 2 reads it, Stage 1 must be partially re-run. This is why the External Shuffle Service (a daemon surviving Executor crashes) is important for Dynamic Allocation. If the <strong>Driver</strong> dies, the entire application fails — there's no built-in Driver failover in open-source Spark (Databricks and some cluster managers provide it).</p>
+        </div>
+      </div>
+
+      <div class="iq-card">
+        <div class="iq-question">
+          <span class="iq-q-icon">Q</span>
+          <span class="iq-q-text">What is the difference between repartition() and coalesce()? Which one to use when?</span>
+        </div>
+        <div class="iq-answer">
+          <p><code>repartition(n)</code> performs a <strong>full shuffle</strong> — all data moves across the network. It can both increase and decrease partition count. Guarantees an even distribution. Can also repartition by column key (<code>repartition(200, "country")</code>), co-locating rows with the same key for future operations.</p>
+          <p><code>coalesce(n)</code> avoids a full shuffle — it merges adjacent partitions by moving data from some partitions into nearby ones on the same machine. Can only <strong>decrease</strong> partition count (not increase). Much cheaper — often just metadata changes with minimal data movement. However, can produce uneven partition sizes since it merges without redistribution.</p>
+          <p><strong>Use repartition() when:</strong> you need to increase parallelism, you need even distribution before a groupBy/join, or you want column-keyed partitioning. <strong>Use coalesce() when:</strong> you want to reduce partitions after a filter significantly reduced row count, or when writing to a file sink and you want fewer output files — <code>df.coalesce(1).write.csv()</code> produces a single file.</p>
+        </div>
+      </div>
+
+      <div class="iq-card">
+        <div class="iq-question">
+          <span class="iq-q-icon">Q</span>
+          <span class="iq-q-text">Explain what happens during a shuffle. Why is it expensive?</span>
+        </div>
+        <div class="iq-answer">
+          <p>A shuffle is triggered by wide transformations (groupBy, join, distinct, repartition) where the output partitions depend on multiple input partitions — meaning data must move across machine boundaries.</p>
+          <p>The process has three phases: <strong>Map phase (write):</strong> Each Task processes its input partition and writes output records to local disk shuffle files, bucketed by hash of the output partition key. This is disk I/O. <strong>Network transfer:</strong> Every Executor in Stage 2 fetches the shuffle data it needs from every Executor in Stage 1 via HTTP. With 200 map tasks and 200 reduce tasks, that's up to 40,000 connections. <strong>Reduce phase (read/merge):</strong> Each Task reads all fetched shuffle data, sorts and merges it, then performs the actual aggregation/join.</p>
+          <p>It's expensive because it combines the three slowest operations in distributed computing: <strong>disk writes</strong> (10–100× slower than RAM), <strong>network transfer</strong> (100–1000× slower than RAM), and <strong>disk reads</strong>. For large datasets, shuffles can involve terabytes of network traffic. This is why "minimize shuffles" is the cardinal rule of Spark optimization.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</article>
+
+
+<!-- ===== CHAPTER 10: ROADMAP ===== -->
+<article class="chapter" id="roadmap">
+  <div class="ch-label">Chapter 10 — Your Learning Path</div>
+  <h2>The Complete <em>Roadmap</em> — Where You Are and Where to Go</h2>
+  <p class="ch-lead">You've now completed a full three-part journey through Apache Spark. Here's exactly where you stand, what you've mastered, and the specific next steps to take your career from data engineer to senior data architect.</p>
+
+  <div class="prose">
+
+    <h3>What You Now Know — The Complete Picture</h3>
+
+    <div class="roadmap">
+      <div class="rm-phase">
+        <div class="rm-phase-num">I</div>
+        <div>
+          <div class="rm-phase-sub">Part 1 — Foundation</div>
+          <div class="rm-phase-title">Why Spark Exists and How It's Built</div>
+          <div class="rm-items">
+            <span class="rm-tag">The Hadoop Problem</span>
+            <span class="rm-tag">In-Memory Processing</span>
+            <span class="rm-tag">Driver / Executor / Cluster Manager</span>
+            <span class="rm-tag">RDD Internals</span>
+            <span class="rm-tag">Lazy Evaluation</span>
+            <span class="rm-tag">DAG → Stages → Tasks</span>
+            <span class="rm-tag">Shuffle Mechanics</span>
+            <span class="rm-tag">5 Spark Components</span>
+            <span class="rm-tag">Memory Model</span>
+            <span class="rm-tag">Deploy Modes</span>
+            <span class="rm-tag">Full Job Lifecycle</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="rm-phase">
+        <div class="rm-phase-num">II</div>
+        <div>
+          <div class="rm-phase-sub">Part 2 — Optimization</div>
+          <div class="rm-phase-title">Making Jobs Fast and Reliable</div>
+          <div class="rm-items">
+            <span class="rm-tag">Partitioning Science</span>
+            <span class="rm-tag">Data Skew + Salting</span>
+            <span class="rm-tag">AQE (Adaptive Query)</span>
+            <span class="rm-tag">Join Strategies</span>
+            <span class="rm-tag">Catalyst Optimizer</span>
+            <span class="rm-tag">Tungsten + WSCG</span>
+            <span class="rm-tag">Structured Streaming</span>
+            <span class="rm-tag">Watermarking</span>
+            <span class="rm-tag">Delta Lake</span>
+            <span class="rm-tag">UDF vs Pandas UDF</span>
+            <span class="rm-tag">Spark UI Mastery</span>
+            <span class="rm-tag">Production Patterns</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="rm-phase">
+        <div class="rm-phase-num">III</div>
+        <div>
+          <div class="rm-phase-sub">Part 3 — Expert Level (This Part)</div>
+          <div class="rm-phase-title">Production Engineering and Deep Internals</div>
+          <div class="rm-items">
+            <span class="rm-tag">Scheduler Internals</span>
+            <span class="rm-tag">Data Locality</span>
+            <span class="rm-tag">Speculative Execution</span>
+            <span class="rm-tag">Dynamic Allocation</span>
+            <span class="rm-tag">MLlib Pipelines</span>
+            <span class="rm-tag">Distributed Gradient Descent</span>
+            <span class="rm-tag">ALS Recommender</span>
+            <span class="rm-tag">Window Feature Engineering</span>
+            <span class="rm-tag">GraphX + Pregel</span>
+            <span class="rm-tag">Cloud (EMR / Dataproc / Databricks)</span>
+            <span class="rm-tag">K8s Deployment</span>
+            <span class="rm-tag">Testing Spark</span>
+            <span class="rm-tag">Broadcast Variables</span>
+            <span class="rm-tag">Accumulators</span>
+            <span class="rm-tag">Interview Mastery</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Your Next Steps — The Expert Track</h3>
+
+    <div class="timeline">
+      <div class="tl-item">
+        <h4>Step 1: Build a Real End-to-End Project (1–2 months)</h4>
+        <p>Don't just read — build. Pick a public dataset (Kaggle, NYC Open Data, GitHub Archive). Build a complete pipeline: ingest raw data → clean and validate → feature engineer → train a model → serve predictions as a Delta table → monitor with data quality checks. Use GitHub for version control. This project goes on your resume and portfolio.</p>
+      </div>
+      <div class="tl-item">
+        <h4>Step 2: Get Databricks Certified (1 month)</h4>
+        <p>The <strong>Databricks Certified Associate Developer for Apache Spark</strong> is the most recognized Spark certification. It covers everything from Parts I–III. The exam is 60 minutes, 60 multiple-choice questions. With your depth of understanding, you're already well-prepared. Take the Databricks practice tests, then take the real exam. It adds significant credibility to your resume.</p>
+      </div>
+      <div class="tl-item">
+        <h4>Step 3: Learn Apache Iceberg / Hudi (2–4 weeks)</h4>
+        <p>Delta Lake is one of three competing open table formats. The others are <strong>Apache Iceberg</strong> (used by Netflix, Apple, LinkedIn — better multi-engine support) and <strong>Apache Hudi</strong> (used by Uber — strong upsert support). Knowing all three and their tradeoffs makes you a much stronger candidate. Iceberg is increasingly winning enterprise adoption in 2024–2025.</p>
+      </div>
+      <div class="tl-item">
+        <h4>Step 4: Master dbt + Spark (2–3 weeks)</h4>
+        <p><strong>dbt (data build tool)</strong> has become the standard transformation layer in the modern data stack. Learn dbt Core, understand how it generates SQL, how it handles incremental models (equivalent to Delta MERGE), and how it integrates with Spark via dbt-spark or dbt-databricks adapters. Most data engineering roles now expect dbt alongside Spark.</p>
+      </div>
+      <div class="tl-item">
+        <h4>Step 5: Understand the Full Modern Data Stack (1–2 months)</h4>
+        <p>Spark doesn't live in isolation. The modern data stack includes: <strong>Ingestion</strong> (Fivetran, Airbyte, Kafka + Debezium for CDC), <strong>Storage</strong> (S3/GCS + Iceberg/Delta), <strong>Transformation</strong> (Spark + dbt), <strong>Orchestration</strong> (Airflow, Dagster, Prefect), <strong>Serving</strong> (BigQuery, Redshift, Trino/Presto), <strong>BI</strong> (Looker, Tableau, Metabase). Know how Spark fits into and connects with each layer.</p>
+      </div>
+      <div class="tl-item">
+        <h4>Step 6: Learn Kafka + Flink (1–2 months)</h4>
+        <p>For streaming workloads, Spark Structured Streaming competes with <strong>Apache Flink</strong>. Flink is often preferred for low-latency streaming (sub-second) and complex event processing. Knowing both makes you versatile. And Kafka is the universal message bus that feeds both — understanding Kafka's partitioning, consumer groups, offset management, and schema registry is essential for any real streaming system.</p>
+      </div>
+    </div>
+
+    <h3>The Skill Level Map — Where You Stand</h3>
+
+    <div class="cards">
+      <div class="card" style="border-color:rgba(193,91,58,0.35);">
+        <div class="card-icon">🌱</div>
+        <div class="card-title">Junior Data Engineer</div>
+        <span class="card-badge">0–1 years</span>
+        <p>Knows Spark APIs, can write basic DataFrames, understands lazy evaluation and actions. After Parts I and II, you're here or beyond.</p>
+      </div>
+      <div class="card" style="border-color:rgba(201,146,42,0.35);">
+        <div class="card-icon">⚡</div>
+        <div class="card-title">Data Engineer</div>
+        <span class="card-badge">1–3 years</span>
+        <p>Diagnoses performance issues, understands partitioning and skew, designs production pipelines, knows Delta Lake and streaming. After Part III, you're here.</p>
+      </div>
+      <div class="card" style="border-color:rgba(30,58,47,0.35);">
+        <div class="card-icon">🎯</div>
+        <div class="card-title">Senior Data Engineer</div>
+        <span class="card-badge">3–6 years</span>
+        <p>Architects entire data platforms, chooses between competing technologies, mentors others, runs post-mortems on production incidents, contributes to open source. Steps 1–6 get you here.</p>
+      </div>
+      <div class="card" style="border-color:rgba(74,124,89,0.35);">
+        <div class="card-icon">🏛️</div>
+        <div class="card-title">Principal / Staff Engineer</div>
+        <span class="card-badge">6+ years</span>
+        <p>Defines organizational data strategy, evaluates build-vs-buy decisions, designs systems for 10× future scale, writes engineering design documents for new platforms.</p>
+      </div>
+    </div>
+
+    <div class="tip">
+      <span class="tip-tag">🎓 Final Word</span>
+      <p>You've now gone through the complete Spark curriculum — from "what is distributed computing" all the way to scheduler internals, distributed ML, cloud deployment, testing, and career strategy. Most people who call themselves Spark engineers have never gone this deep. <strong>The concepts in these three parts are exactly what separates a junior who "knows Spark" from a senior who genuinely understands it.</strong> Now build things. Break things. Debug things. That final 20% of understanding only comes from doing. Go build something.</p>
+    </div>
+
+  </div>
+</article>
+
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-eyebrow">Apache Spark · Complete Three-Part Series</div>
+  <h3>You now know <em>Spark</em>.</h3>
+  <p>FOUNDATIONS · OPTIMIZATION · EXPERT INTERNALS · CAREER READINESS</p>
+</footer>
+
+</body>
+</html>
